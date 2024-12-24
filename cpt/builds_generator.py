@@ -2,9 +2,8 @@ import copy
 import os
 from collections import namedtuple
 
-from conans.model.ref import ConanFileReference
-from conans.model.version import Version
 from cpt.tools import split_colon_env, transform_list_options_to_dict
+from cpt._compat import ConanFileReference, Version
 
 default_gcc_versions = ["4.9", "5", "6", "7", "8", "9", "10", "11"]
 default_clang_versions = ["3.8", "3.9", "4.0", "5.0", "6.0", "7.0", "8", "9", "10", "11", "12", "13"]

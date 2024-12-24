@@ -1,6 +1,6 @@
 import os.path
-from conans import tools
 from conans.model.conf import ConfDefinition
+from cpt._compat import load, save, get_global_conf, get_evaluated_value
 
 
 class ConfigManager(object):
@@ -23,15 +23,15 @@ class GlobalConf(object):
         self.printer = printer
 
     def populate(self, values):
-        global_conf = self._conan_api.app.cache.new_config_path
+        global_conf = get_global_conf(self._conan_api)
         if isinstance(values, str):
             values = values.split(",")
         config = ConfDefinition()
         if os.path.exists(global_conf):
-            content = tools.load(global_conf)
+            content = load(global_conf)
             config.loads(content)
         for value in values:
             key = value[:value.find('=')]
             k_value = value[value.find('=') + 1:]
-            config.update(key, k_value)
-        tools.save(global_conf, config.dumps())
+            config.update(key, get_evaluated_value(k_value))
+        save(global_conf, config.dumps())

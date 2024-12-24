@@ -5,15 +5,13 @@ import re
 import time
 from collections import namedtuple
 
-from conans import tools
 from conans.model.version import Version
-from conans.model.ref import ConanFileReference
 
 from cpt import __version__ as package_tools_version, get_client_version
 from cpt.config import ConfigManager, GlobalConf
 from cpt.printer import Printer
 from cpt.profiles import load_profile, patch_default_base_profile
-from conans.client.conan_api import ProfileData
+from cpt._compat import no_op, load, environment_append, ConanFileReference, ProfileData, chdir, CONAN_V2, create_package, upload_package, vcvars, which
 
 
 class CreateRunner(object):
@@ -68,7 +66,7 @@ class CreateRunner(object):
                 conan_api.create_app()
             cache = conan_api.app.cache
 
-        self._profile = load_profile(profile_abs_path, cache)
+        self._profile = load_profile(profile_abs_path, conan_api, cache)
 
         if isinstance(self._test_folder, str) and self._test_folder.lower() == "false":
             self._test_folder = False
@@ -91,7 +89,7 @@ class CreateRunner(object):
             global_conf = GlobalConf(self._conan_api, self.printer)
             global_conf.populate(self._global_conf)
 
-        context = tools.no_op()
+        context = no_op()
         compiler = self.settings.get("compiler", None)
         if not self._exclude_vcvars_precommand:
             if compiler == "Visual Studio" and "compiler.version" in self.settings:
@@ -99,13 +97,13 @@ class CreateRunner(object):
                 mock_sets = namedtuple("mock_settings",
                                        "arch compiler get_safe")(self.settings["arch"], compiler_set,
                                                                  lambda x: self.settings.get(x, None))
-                context = tools.vcvars(mock_sets)
+                context = vcvars(mock_sets)
         with context:
             self.printer.print_rule()
-            self.printer.print_profile(tools.load(self._profile_abs_path))
+            self.printer.print_profile(load(self._profile_abs_path))
 
             if self._profile_build_abs_path is not None:
-                self.printer.print_profile(tools.load(self._profile_build_abs_path))
+                self.printer.print_profile(load(self._profile_build_abs_path))
 
             with self.printer.foldable_output("conan_create"):
                 if client_version < Version("1.10.0"):
@@ -116,7 +114,7 @@ class CreateRunner(object):
                 if self._build_policy:
                     self._build_policy = [] if self._build_policy == ["all"] else self._build_policy
                 # https://github.com/conan-io/conan-package-tools/issues/184
-                with tools.environment_append({"_CONAN_CREATE_COMMAND_": "1"}):
+                with environment_append({"_CONAN_CREATE_COMMAND_": "1"}):
                     params = {"name": name, "version": version, "user": user,
                               "channel": channel, "build_modes": self._build_policy,
                               "require_overrides": self._require_overrides,
@@ -124,9 +122,9 @@ class CreateRunner(object):
                               "profile_build_name": self._profile_build_abs_path}
                     self.printer.print_message("Calling 'conan create'")
                     self.printer.print_dict(params)
-                    with tools.chdir(self._cwd):
+                    with chdir(self._cwd):
                         if Version(client_version) >= "1.8.0":
-                            from conans.errors import ConanInvalidConfiguration
+                            from cpt._compat import ConanInvalidConfiguration
                             exc_class = ConanInvalidConfiguration
                         else:
                             exc_class = None
@@ -152,43 +150,15 @@ class CreateRunner(object):
                                 else:
                                     profile_build = None
 
-                                self._results = self._conan_api.create(self._conanfile, name=name, version=version,
-                                                        user=user, channel=channel,
-                                                        build_modes=self._build_policy,
-                                                        require_overrides=self._require_overrides,
-                                                        profile_names=[self._profile_abs_path],
-                                                        test_folder=self._test_folder,
-                                                        not_export=self.skip_recipe_export,
-                                                        update=self._update_dependencies,
-                                                        lockfile=self._lockfile,
-                                                        profile_build=profile_build)
+                                create_package(self, name, version, channel, user, profile_build)
                         except exc_class as e:
                             self.printer.print_rule()
                             self.printer.print_message("Skipped configuration by the recipe: "
                                                        "%s" % str(e))
                             self.printer.print_rule()
                             return
-                        for installed in self._results['installed']:
-                            reference = installed["recipe"]["id"]
-                            if client_version >= Version("1.10.0"):
-                                reference = ConanFileReference.loads(reference)
-                                reference = str(reference.copy_clear_rev())
-                            if ((reference == str(self._reference)) or
-                               (reference in self._upload_dependencies) or
-                               ("all" in self._upload_dependencies)) and \
-                               installed['packages']:
-                                package_id = installed['packages'][0]['id']
-                                if installed['packages'][0]["built"]:
-                                    if "@" not in reference:
-                                        reference += "@"
-                                    if self._upload_only_recipe:
-                                        self._uploader.upload_recipe(reference, self._upload)
-                                    else:
-                                        self._uploader.upload_packages(reference,
-                                                                    self._upload, package_id)
-                                else:
-                                    self.printer.print_message("Skipping upload for %s, "
-                                                               "it hasn't been built" % package_id)
+                        
+                        upload_package(self, client_version)                                  
 
 
 class DockerCreateRunner(object):
@@ -288,7 +258,7 @@ class DockerCreateRunner(object):
 
     @staticmethod
     def is_selinux_running():
-        if tools.which("getenforce"):
+        if which("getenforce"):
             output = subprocess.check_output("getenforce", shell=True)
             return "Enforcing" in output.decode()
         return False

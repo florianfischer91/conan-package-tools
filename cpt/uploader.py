@@ -1,8 +1,7 @@
 from conans.model.version import Version
-from conans.client.cmd.uploader import UPLOAD_POLICY_FORCE
 
 from cpt import get_client_version
-
+from cpt._compat import UPLOAD_POLICY_FORCE
 
 class Uploader(object):
 

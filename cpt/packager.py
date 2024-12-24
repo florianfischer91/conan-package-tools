@@ -7,11 +7,6 @@ from collections import defaultdict
 from itertools import product
 
 import six
-from conans import tools
-from conans.client.conan_api import Conan
-from conans.client.runner import ConanRunner
-from conans.model.ref import ConanFileReference
-from conans.model.version import Version
 
 from cpt import get_client_version
 from cpt.auth import AuthManager
@@ -26,6 +21,7 @@ from cpt.tools import split_colon_env
 from cpt.uploader import Uploader
 from cpt.config import ConfigManager
 
+from cpt._compat import environment_append, Conan, ConanRunner, ConanFileReference, is_windows, which, load_remotes, Version, use_pattern
 
 def load_cf_class(path, conan_api):
     client_version = get_client_version()
@@ -51,14 +47,18 @@ def load_cf_class(path, conan_api):
     else:
         if not conan_api.app:
             conan_api.create_app()
-        remotes = conan_api.app.cache.registry.load_remotes()
-        conan_api.app.python_requires.enable_remotes(remotes=remotes)
+        remotes = load_remotes(conan_api)
+        # TODO Fix python requires for v2
+        if client_version < Version("2"):
+            conan_api.app.python_requires.enable_remotes(remotes=remotes)
         if client_version < Version("1.20.0"):
             return conan_api.app.loader.load_class(path)
         elif client_version < Version("1.21.0"):
             return conan_api.app.loader.load_basic(path)
         else:
-            conan_api.app.pyreq_loader.enable_remotes(remotes=remotes)
+            # TODO Fix for v2
+            if client_version < Version("2"):
+                conan_api.app.pyreq_loader.enable_remotes(remotes=remotes)
             return conan_api.app.loader.load_named(path, None, None, None, None)
 
 
@@ -71,26 +71,7 @@ class PlatformInfo(object):
 
 
 class ConanOutputRunner(ConanRunner):
-
-    def __init__(self):
-        super(ConanOutputRunner, self).__init__()
-
-        class OutputInternal(object):
-            def __init__(self):
-                self.output = ""
-
-            def write(self, data):
-                self.output += str(data)
-                sys.stdout.write(data)
-
-        self._output = OutputInternal()
-
-    @property
-    def output(self):
-        return self._output.output
-
-    def __call__(self, command):
-        return super(ConanOutputRunner, self).__call__(command, output=self._output)
+    pass
 
 
 class ConanMultiPackager(object):
@@ -270,7 +251,7 @@ class ConanMultiPackager(object):
         elif platform.system() != "Windows" and self._docker_image and 'conanio/' not in str(self._docker_image):
             self.sudo_pip_command = "sudo -E"
         self.pip_command = os.getenv("CONAN_PIP_COMMAND", "pip")
-        pip_found = True if tools.os_info.is_windows else tools.which(self.pip_command)
+        pip_found = True if is_windows() else which(self.pip_command)
         if not pip_found or not "pip" in self.pip_command:
             raise Exception("CONAN_PIP_COMMAND: '{}' is not a valid pip command.".format(self.pip_command))
         self.docker_pip_command = os.getenv("CONAN_DOCKER_PIP_COMMAND", "pip")
@@ -493,7 +474,7 @@ class ConanMultiPackager(object):
         if shared_option_name is None:
             if conanfile:
                 if hasattr(conanfile, "options") and conanfile.options and "shared" in conanfile.options:
-                    shared_option_name = "%s:shared" % reference.name
+                    shared_option_name = "%s%s:shared" % (reference.name, "/*" if use_pattern else "")
 
         # filter only valid options
         raw_options_for_building = [opt[opt.find(":") + 1:] for opt in build_all_options_values]
@@ -513,7 +494,7 @@ class ConanMultiPackager(object):
             for key, value in cloned_options.items():
                 # add package reference to the option name
                 if not key.startswith("{}:".format(reference.name)):
-                    cloned_options2["{}:{}".format(reference.name, key)] = value
+                    cloned_options2["{}{}:{}".format(reference.name, "/*" if use_pattern else "", key)] = value
             # combine all options x values (cartesian product)
             build_all_options_values = [dict(zip(cloned_options2, v)) for v in product(*cloned_options2.values())]
 
@@ -576,7 +557,7 @@ class ConanMultiPackager(object):
     def run(self, base_profile_name=None, summary_file=None, base_profile_build_name=None):
         env_vars = self.auth_manager.env_vars()
         env_vars.update(self.remotes_manager.env_vars())
-        with tools.environment_append(env_vars):
+        with environment_append(env_vars):
             self.printer.print_message("Running builds...")
             if self.ci_manager.skip_builds():
                 self.printer.print_message("Skipped builds due [skip ci] commit message")
