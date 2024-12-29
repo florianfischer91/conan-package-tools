@@ -1,12 +1,10 @@
 import unittest
 
-from conans.errors import ConanException
-
 from cpt.config import ConfigManager
 from cpt.printer import Printer
 from cpt.test.integration.base import BaseTest
 from cpt.test.unit.packager_test import MockConanAPI
-
+from cpt._compat import CONAN_V2, ConanException
 
 class RemotesTest(unittest.TestCase):
 
@@ -26,19 +24,27 @@ class RemotesTestRealApi(BaseTest):
 
     def test_valid_config(self):
         manager = ConfigManager(self.api, Printer())
-
-        profiles = self.api.profile_list()
+        if CONAN_V2:
+            profiles = self.api.profiles.list()
+        else:
+            profiles = self.api.profile_list()
+        
         self.assertEquals(len(profiles), 0)
 
         manager.install("https://github.com/bincrafters/bincrafters-config.git", "-b main")
-
-        profiles = self.api.profile_list()
+        if CONAN_V2:
+            profiles = self.api.profiles.list()
+        else:
+            profiles = self.api.profile_list()
         self.assertGreater(len(profiles), 3)
 
     def test_invalid_config(self):
         manager = ConfigManager(self.api, Printer())
 
-        profiles = self.api.profile_list()
+        if CONAN_V2:
+            profiles = self.api.profiles.list()
+        else:
+            profiles = self.api.profile_list()
         self.assertEquals(len(profiles), 0)
 
         try:

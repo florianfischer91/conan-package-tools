@@ -1,10 +1,8 @@
 import unittest
 
-from conans import tools
 
 from cpt.builds_generator import get_visual_builds, get_mingw_builds, get_osx_apple_clang_builds, get_linux_gcc_builds, get_linux_clang_builds, get_msvc_builds
-from conans.model.ref import ConanFileReference
-
+from cpt._compat import ConanFileReference, environment_append
 
 class GeneratorsTest(unittest.TestCase):
 
@@ -1381,7 +1379,7 @@ class GeneratorsTest(unittest.TestCase):
         self.assertEquals([tuple(a) for a in builds], expected)
 
         # Same with environment passing None in the parameter
-        with tools.environment_append({"CONAN_VISUAL_TOOLSETS": "17=v140;v140_xp,11=v140;v140_xp"}):
+        with environment_append({"CONAN_VISUAL_TOOLSETS": "17=v140;v140_xp,11=v140;v140_xp"}):
             builds = get_visual_builds(visual_versions=["17"], archs=["x86"],
                                        visual_runtimes=["MDd"], visual_toolsets=None,
                                        shared_option_name=None,

@@ -1,6 +1,6 @@
 import unittest
 
-from conans import tools
+from cpt._compat import environment_append
 from cpt.printer import Printer
 from cpt.remotes import RemotesManager
 from cpt.test.unit.packager_test import MockConanAPI
@@ -13,7 +13,7 @@ class RemotesTest(unittest.TestCase):
 
     def assert_serial_deserial(self, manager, expected):
         self.assertEquals(manager.env_vars(), expected)
-        with tools.environment_append(expected):
+        with environment_append(expected):
             manager = RemotesManager(self.conan_api, Printer())
             self.assertEquals(manager.env_vars(), expected)
 

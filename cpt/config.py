@@ -1,6 +1,6 @@
 import os.path
 from conans.model.conf import ConfDefinition
-from cpt._compat import load, save, get_global_conf, get_evaluated_value
+from cpt._compat import CONAN_V2, load, save, get_global_conf, get_evaluated_value
 
 
 class ConfigManager(object):
@@ -14,7 +14,10 @@ class ConfigManager(object):
         if args:
             message += " with args \"%s\"" % args
         self.printer.print_message(message)
-        self._conan_api.config_install(url, verify_ssl=True, args=args)
+        if CONAN_V2:
+            self._conan_api.config.install(url, verify_ssl=True,args=args)
+        else:
+            self._conan_api.config_install(url, verify_ssl=True, args=args)
 
 
 class GlobalConf(object):

@@ -9,7 +9,14 @@ import uuid
 
 from six.moves.urllib.parse import quote
 
-from conans.client.tools import get_cased_path, Git, chdir, SVN
+from cpt._compat import CONAN_V2
+if CONAN_V2:
+    from conans.client.subsystems import get_cased_path
+    from conan.tools.scm import Git
+
+else:
+    from conans.client.tools import get_cased_path, Git, chdir, SVN
+
 from cpt.test.utils.test_files import temp_folder
 from conans.util.files import save_files, mkdir
 from conans.util.runners import check_output_runner

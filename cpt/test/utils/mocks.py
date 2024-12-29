@@ -5,13 +5,20 @@ from collections import Counter, defaultdict, namedtuple
 
 import six
 from six import StringIO
-
-from conans import ConanFile, Options
-from conans.client.output import ConanOutput
-from conans.client.userio import UserIO
-from conans.model.env_info import DepsEnvInfo, EnvInfo, EnvValues
-from conans.model.options import PackageOptions
-from conans.model.user_info import DepsUserInfo
+from cpt._compat import CONAN_V2
+if CONAN_V2:
+    from conan import ConanFile
+    from conans.model.options import Options
+    from conan.api.output import ConanOutput
+    from conan.api.input import UserInput as UserIO
+    from conans.model.options import _PackageOptions as PackageOptions
+else:
+    from conans import ConanFile, Options
+    from conans.client.output import ConanOutput
+    from conans.client.userio import UserIO
+    from conans.model.env_info import DepsEnvInfo, EnvInfo, EnvValues
+    from conans.model.options import PackageOptions
+    from conans.model.user_info import DepsUserInfo
 
 
 class LocalDBMock(object):
@@ -168,10 +175,11 @@ class ConanFileMock(ConanFile):
         self.should_test = True
         self.generators = []
         self.captured_env = {}
-        self.deps_env_info = DepsEnvInfo()
-        self.env_info = EnvInfo()
-        self.deps_user_info = DepsUserInfo()
-        self._conan_env_values = EnvValues()
+        if not CONAN_V2:
+            self.deps_env_info = DepsEnvInfo()
+            self.env_info = EnvInfo()
+            self.deps_user_info = DepsUserInfo()
+            self._conan_env_values = EnvValues()
 
     def run(self, command):
         self.command = command
@@ -188,6 +196,7 @@ class TestBufferConanOutput(ConanOutput):
     """
 
     def __init__(self):
+        # TODO how to translate to conan2
         ConanOutput.__init__(self, StringIO(), color=False)
 
     def __repr__(self):
@@ -208,7 +217,9 @@ class TestBufferConanOutput(ConanOutput):
 
     def __contains__(self, value):
         return value in self.__repr__()
-
+    if CONAN_V2:
+        def warn(self, msg, warn_tag=None):
+            return self.warning(msg, warn_tag)
 
 # cli2.0
 class RedirectedTestOutput(StringIO):

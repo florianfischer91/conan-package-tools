@@ -1,16 +1,20 @@
 import six
-from conans.client.conan_api import Conan
+
 from conans.model.version import Version
 from cpt import get_client_version
 
 from cpt.packager import ConanMultiPackager
-
+from cpt._compat import Conan, CONAN_V2
 
 def get_patched_multipackager(tc, *args, **kwargs):
     client_version = get_client_version()
     extra_init_kwargs = {}
     if Version("1.11") < Version(client_version) < Version("1.18"):
         extra_init_kwargs.update({'requester': tc.requester})
+    elif Version(client_version) >= Version("2"):
+        from conan.test.utils.tools import TestRequester
+        # extra_init_kwargs.update({'http_requester': TestRequester(tc.servers)})
+
     elif Version(client_version) >= Version("1.18"):
         extra_init_kwargs.update({'http_requester': tc.requester})
 
@@ -19,7 +23,10 @@ def get_patched_multipackager(tc, *args, **kwargs):
     else:
         cache = tc.cache
 
-    conan_api = Conan(cache_folder=cache.cache_folder, output=tc.out, **extra_init_kwargs)
+    if CONAN_V2:
+        conan_api = Conan(cache_folder=tc.cache_folder, **extra_init_kwargs)
+    else:
+        conan_api = Conan(cache_folder=cache.cache_folder, output=tc.out, **extra_init_kwargs)
 
     class Printer(object):
 
@@ -29,7 +36,11 @@ def get_patched_multipackager(tc, *args, **kwargs):
         def __call__(self, contents):
             if six.PY2:
                 contents = unicode(contents)
-            self.tc.out.write(contents)
+            if CONAN_V2:
+                # TODO fix conan2
+                print(contents)
+            else:
+                self.tc.out.write(contents)
 
     kwargs["out"] = Printer(tc)
     kwargs["conan_api"] = conan_api

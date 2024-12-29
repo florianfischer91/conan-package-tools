@@ -1,11 +1,10 @@
 import unittest
 
-from conans import tools
 from cpt.test.utils.tools import TestBufferConanOutput
 from cpt.auth import AuthManager
 from cpt.printer import Printer
 from cpt.test.unit.packager_test import MockConanAPI
-
+from cpt._compat import environment_append
 
 class AuthTest(unittest.TestCase):
 
@@ -50,7 +49,7 @@ class AuthTest(unittest.TestCase):
         self.assertEquals(password, "mypassword")
 
     def plain_from_env_test(self):
-        with tools.environment_append({"CONAN_LOGIN_USERNAME": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME": "myuser",
                                        "CONAN_PASSWORD": "mypass"}):
             manager = AuthManager(self.conan_api, self.printer)
             user, password = manager.get_user_password()
@@ -59,12 +58,12 @@ class AuthTest(unittest.TestCase):
 
     def plain_multiple_from_env_test(self):
         # Bad mix
-        with tools.environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
                                        "CONAN_PASSWORD": "mypass"}):
             with self.assertRaisesRegexp(Exception, "Password for remote 'R1' not specified"):
                 AuthManager(self.conan_api, self.printer)
 
-        with tools.environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
                                        "CONAN_PASSWORD_R1": "mypass",
                                        "CONAN_LOGIN_USERNAME_R_OTHER": "myuser2",
                                        "CONAN_PASSWORD_R_OTHER": "mypass2"}):
@@ -78,13 +77,13 @@ class AuthTest(unittest.TestCase):
             self.assertEquals(password, "mypass2")
 
         # Miss password
-        with tools.environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME_R1": "myuser",
                                        "CONAN_PASSWORD_R2": "mypass"}):
             with self.assertRaisesRegexp(Exception, "Password for remote 'R1' not specified"):
                 AuthManager(self.conan_api, self.printer)
 
     def plain_from_env_priority_test(self):
-        with tools.environment_append({"CONAN_LOGIN_USERNAME": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME": "myuser",
                                        "CONAN_PASSWORD": "mypass"}):
             manager = AuthManager(self.conan_api, self.printer, login_input="otheruser",
                                   passwords_input="otherpass")
@@ -93,7 +92,7 @@ class AuthTest(unittest.TestCase):
             self.assertEquals(password, "otherpass")
 
     def plain_from_env_priority_mix_test(self):
-        with tools.environment_append({"CONAN_LOGIN_USERNAME": "myuser",
+        with environment_append({"CONAN_LOGIN_USERNAME": "myuser",
                                        "CONAN_PASSWORD": "mypass"}):
             manager = AuthManager(self.conan_api, self.printer, login_input="otheruser")
             user, password = manager.get_user_password()
@@ -134,7 +133,7 @@ class AuthTest(unittest.TestCase):
                     'CONAN_LOGIN_USERNAME_MY_ARTIFACTORY': 'other_user'}
         self.assertEquals(manager.env_vars(), expected)
 
-        with tools.environment_append(expected):
+        with environment_append(expected):
             manager = AuthManager(self.conan_api, self.printer)
             self.assertEquals(manager.env_vars(), expected)
 

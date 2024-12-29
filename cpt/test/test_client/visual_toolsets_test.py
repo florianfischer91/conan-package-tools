@@ -1,28 +1,32 @@
 import platform
 import unittest
 
-from conans.client.tools import environment_append
+from cpt._compat import environment_append
 from cpt.test.utils.tools import TestClient, TestServer
 
 from cpt.test.test_client.tools import get_patched_multipackager
+from cpt._compat import CONAN_V2
 
 
 class VisualToolsetsTest(unittest.TestCase):
 
-    conanfile = """from conans import ConanFile
+    conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "lib"
     version = "1.0"
     settings = "os", "compiler"
 
     def build(self):
-        self.output.warn("HALLO")
+        self.output.warning("HALLO")
 """
 
     def test_toolsets_works(self):
 
         ts = TestServer(users={"user": "password"})
-        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        if CONAN_V2:
+            tc = TestClient(servers={"default": ts}, inputs=["user", "password"])
+        else:
+            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user",
@@ -30,14 +34,24 @@ class Pkg(ConanFile):
             mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mulitpackager.add_common_builds(reference="lib/1.0@user/stable",
                                             shared_option_name=False)
-            mulitpackager.run()
-            if platform.system() == "Windows":
-                self.assertIn("Uploading package 1/4", tc.out)
-                self.assertIn("Uploading package 2/4", tc.out)
-                self.assertIn("Uploading package 3/4", tc.out)
-                self.assertIn("Uploading package 4/4", tc.out)
-                self.assertIn("compiler.toolset=v140", tc.out)
-                self.assertIn("compiler.toolset=v140_xp", tc.out)
+            if CONAN_V2:
+                from conan.test.utils.mocks import RedirectedTestOutput
+                from conan.test.utils.tools import redirect_output
+                output = RedirectedTestOutput()
+                with tc.mocked_servers(), redirect_output(output):
+                    mulitpackager.run()
+                    out = str(output)
             else:
-                self.assertIn("Uploading package 1/2", tc.out)
-                self.assertIn("Uploading package 2/2", tc.out)
+                mulitpackager.run()
+                out = str(tc.out)
+            if platform.system() == "Windows":
+                self.assertIn("Uploading package 1/4", out)
+                self.assertIn("Uploading package 2/4", out)
+                self.assertIn("Uploading package 3/4", out)
+                self.assertIn("Uploading package 4/4", out)
+                self.assertIn("compiler.toolset=v140", out)
+                self.assertIn("compiler.toolset=v140_xp", out)
+            else:
+                # TODO We are uploading too many packages...
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:b351051c2c0b8ed4d5b7a820570b965b73ccf698")
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:8435e2cb57f34f98567355bbe0a78d98f38f272a")

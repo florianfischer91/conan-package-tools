@@ -3,8 +3,7 @@ import textwrap
 from cpt.config import GlobalConf
 from cpt.printer import Printer
 from cpt.test.unit.packager_test import MockConanAPI
-from conans import tools
-
+from cpt._compat import load
 
 class GlobalConfUnitTest(unittest.TestCase):
 
@@ -15,7 +14,7 @@ class GlobalConfUnitTest(unittest.TestCase):
     def test_new_global_conf(self):
         manager = GlobalConf(self.conan_api, Printer())
         manager.populate(self.configuration)
-        content = tools.load(self.conan_api._cache.new_config_path)
+        content = load(self.conan_api._cache.new_config_path)
         assert content == textwrap.dedent("""tools.system.package_manager:mode=install
                                              tools.system.package_manager:sudo=True
                                           """.replace(" ", ""))
@@ -25,7 +24,7 @@ class GlobalConfUnitTest(unittest.TestCase):
         manager.populate(self.configuration)
         append_conf = ["tools.system.package_manager:tool=yum"]
         manager.populate(append_conf)
-        content = tools.load(self.conan_api._cache.new_config_path)
+        content = load(self.conan_api._cache.new_config_path)
         assert content == textwrap.dedent("""tools.system.package_manager:mode=install
                                              tools.system.package_manager:sudo=True
                                              tools.system.package_manager:tool=yum
@@ -35,7 +34,7 @@ class GlobalConfUnitTest(unittest.TestCase):
         configuration = "tools.system.package_manager:mode=install,tools.system.package_manager:sudo=True"
         manager = GlobalConf(self.conan_api, Printer())
         manager.populate(configuration)
-        content = tools.load(self.conan_api._cache.new_config_path)
+        content = load(self.conan_api._cache.new_config_path)
         assert content == textwrap.dedent("""tools.system.package_manager:mode=install
                                              tools.system.package_manager:sudo=True
                                           """.replace(" ", ""))

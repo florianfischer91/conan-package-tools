@@ -1,11 +1,9 @@
 import os
 import unittest
 
-from conans.util.files import mkdir_tmp
-from conans import __version__ as client_version
+from cpt._compat import CONAN_V2, mkdir_tmp, Conan, save, chdir, Version
+from conan import conan_version as client_version
 
-from conans import tools
-from conans.client.conan_api import ConanAPIV1
 from cpt.test.utils.tools import TestBufferConanOutput
 
 CONAN_UPLOAD_URL = os.getenv("CONAN_UPLOAD_URL",
@@ -24,9 +22,9 @@ class BaseTest(unittest.TestCase):
         os.chdir(self.tmp_folder)
         # user_home = "c:/tmp/home"  # Cache
         self.old_env = dict(os.environ)
-        os.environ.update({"CONAN_USER_HOME": self.conan_home, "CONAN_PIP_PACKAGE": "0"})
+        os.environ.update({"CONAN_HOME" if CONAN_V2 else "CONAN_USER_HOME": self.conan_home, "CONAN_PIP_PACKAGE": "0"})
         self.output = TestBufferConanOutput()
-        self.api, _, _ = ConanAPIV1.factory()
+        self.api, _, _ = Conan.factory()
         self.api.create_app()
         self.client_cache = self.api.app.cache
 
@@ -36,11 +34,11 @@ class BaseTest(unittest.TestCase):
         os.environ.update(self.old_env)
 
     def save_conanfile(self, conanfile):
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
 
     def create_project(self):
-        with tools.chdir(self.tmp_folder):
-            if tools.Version(client_version) >= "1.32.0":
+        with chdir(self.tmp_folder):
+            if Version(client_version) >= "1.32.0":
                 self.api.new("hello/0.1.0", pure_c=True, exports_sources=True)
             else:
                 self.api.new("hello/0.1.0")

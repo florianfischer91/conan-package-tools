@@ -3,9 +3,8 @@ import unittest
 import sys
 import json
 
-from conans import tools
-from conans.model.ref import ConanFileReference
-from conans.errors import ConanException
+from cpt._compat import CONAN_V2, ConanFileReference, ConanException, save, environment_append, use_pattern
+
 
 from cpt.test.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
@@ -15,7 +14,7 @@ from cpt.test.unit.utils import MockCIManager
 class SimpleTest(BaseTest):
 
     def test_missing_full_reference(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     pass
 """
@@ -26,7 +25,7 @@ class Pkg(ConanFile):
 
     @unittest.skipUnless(sys.platform.startswith("win"), "Requires Windows")
     def test_visual(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 import os
 
 class Pkg(ConanFile):
@@ -48,7 +47,7 @@ class Pkg(ConanFile):
         self.packager.run_builds(1, 1)
 
     def test_visual_exclude_precommand(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 import os
 
 class Pkg(ConanFile):
@@ -72,7 +71,7 @@ class Pkg(ConanFile):
 
     @unittest.skipUnless(sys.platform.startswith("win"), "Requires Windows")
     def test_msvc(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 import os
 
 class Pkg(ConanFile):
@@ -96,7 +95,7 @@ class Pkg(ConanFile):
 
 
     def test_shared_option_auto_managed(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     name = "lib"
@@ -108,10 +107,10 @@ class Pkg(ConanFile):
         self.save_conanfile(conanfile)
         self.packager = ConanMultiPackager(username="lasote")
         self.packager.add_common_builds()
-        self.assertIn("lib:shared", self.packager.items[0].options)
+        self.assertIn("lib/*:shared" if CONAN_V2 else "lib2:shared", self.packager.items[0].options)
 
         # Even without name and version but reference
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
@@ -122,14 +121,14 @@ class Pkg(ConanFile):
         self.save_conanfile(conanfile)
         self.packager = ConanMultiPackager(username="lasote", reference="lib2/1.0")
         self.packager.add_common_builds()
-        self.assertIn("lib2:shared", self.packager.items[0].options)
+        self.assertIn("lib2/*:shared" if CONAN_V2 else "lib2:shared", self.packager.items[0].options)
 
         self.packager = ConanMultiPackager(username="lasote", reference="lib2/1.0")
         self.packager.add_common_builds(shared_option_name=False)
-        self.assertNotIn("lib2:shared", self.packager.items[0].options)
+        self.assertNotIn("lib2/*:shared" if CONAN_V2 else "lib2:shared", self.packager.items[0].options)
 
     def test_auto_managed_subdirectory(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     name = "lib"
@@ -139,14 +138,14 @@ class Pkg(ConanFile):
 
 """
         cwd = os.path.join(self.tmp_folder, "subdirectory")
-        tools.save(os.path.join(cwd, "conanfile.py"), conanfile)
+        save(os.path.join(cwd, "conanfile.py"), conanfile)
         self.packager = ConanMultiPackager(username="lasote", cwd=cwd)
         self.packager.add_common_builds()
         self.assertGreater(len(self.packager.items), 0)
-        self.assertIn("lib:shared", self.packager.items[0].options)
+        self.assertIn("lib/*:shared" if CONAN_V2 else "lib:shared", self.packager.items[0].options)
 
     def test_exported_files(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     name = "lib"
@@ -158,14 +157,17 @@ class Pkg(ConanFile):
 """
         ci_manager = MockCIManager()
         self.save_conanfile(conanfile)
-        tools.save(os.path.join(self.tmp_folder, "other_file"), "Dummy contents")
-        tools.save(os.path.join(self.tmp_folder, "source.cpp"), "Dummy contents")
+        save(os.path.join(self.tmp_folder, "other_file"), "Dummy contents")
+        save(os.path.join(self.tmp_folder, "source.cpp"), "Dummy contents")
         self.packager = ConanMultiPackager(username="lasote", reference="lib/1.0", ci_manager=ci_manager)
         self.packager.add({}, {}, {}, {})
         self.packager.run()
 
         ref = ConanFileReference.loads("lib/1.0@lasote/testing")
-        pf = self.client_cache.package_layout(ref).export()
+        if CONAN_V2:
+            pf = self.client_cache.export_path(ref)
+        else:
+            pf = self.client_cache.package_layout(ref).export()
         found_in_export = False
         for exported in os.listdir(pf):
             if "other_file" == exported:
@@ -173,8 +175,10 @@ class Pkg(ConanFile):
                 break
 
         self.assertTrue(found_in_export)
-
-        pf = self.client_cache.package_layout(ref).export_sources()
+        if CONAN_V2:
+            pf = self.client_cache.export_source_path(ref)
+        else:
+            pf = self.client_cache.package_layout(ref).export_sources()
         found_in_export_sources = False
         for exported in os.listdir(pf):
             if "source.cpp" == exported:
@@ -185,7 +189,7 @@ class Pkg(ConanFile):
 
     def test_build_policy(self):
         ci_manager = MockCIManager()
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 import os
 
 class Pkg(ConanFile):
@@ -195,9 +199,9 @@ class Pkg(ConanFile):
 
 """
         self.save_conanfile(conanfile)
-        with tools.environment_append({"CONAN_USERNAME": "lasote"}):
+        with environment_append({"CONAN_USERNAME": "lasote"}):
             self.packager = ConanMultiPackager(channel="mychannel",
-                                               gcc_versions=["6"],
+                                               gcc_versions=["12"],
                                                visual_versions=["17"],
                                                archs=["x86", "x86_64"],
                                                build_types=["Release"],
@@ -206,10 +210,10 @@ class Pkg(ConanFile):
             self.packager.add_common_builds()
             self.packager.run()
 
-        with tools.environment_append({"CONAN_USERNAME": "lasote",
+        with environment_append({"CONAN_USERNAME": "lasote",
                                        "CONAN_BUILD_POLICY": "outdated"}):
             self.packager = ConanMultiPackager(channel="mychannel",
-                                               gcc_versions=["6"],
+                                               gcc_versions=["12"],
                                                visual_versions=["17"],
                                                archs=["x86", "x86_64"],
                                                build_types=["Release"],
@@ -219,7 +223,7 @@ class Pkg(ConanFile):
 
     def test_multiple_build_policy(self):
         ci_manager = MockCIManager()
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 import os
 
 class Pkg(ConanFile):
@@ -229,7 +233,7 @@ class Pkg(ConanFile):
 
 """
         self.save_conanfile(conanfile)
-        with tools.environment_append({"CONAN_USERNAME": "lasote"}):
+        with environment_append({"CONAN_USERNAME": "lasote"}):
             self.packager = ConanMultiPackager(channel="mychannel",
                                                gcc_versions=["6"],
                                                visual_versions=["17"],
@@ -240,7 +244,7 @@ class Pkg(ConanFile):
             self.packager.add_common_builds()
             self.packager.run()
 
-        with tools.environment_append({"CONAN_USERNAME": "lasote",
+        with environment_append({"CONAN_USERNAME": "lasote",
                                        "CONAN_BUILD_POLICY": "outdated, lib"}):
             self.packager = ConanMultiPackager(channel="mychannel",
                                                gcc_versions=["6"],
@@ -252,14 +256,14 @@ class Pkg(ConanFile):
             self.packager.run()
 
     def test_custom_conanfile(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "lib"
     version = "1.2"
     settings = "os", "compiler", "build_type", "arch"
 """
-        tools.save(os.path.join(self.tmp_folder, "foobar.py"), conanfile)
-        with tools.environment_append({"CONAN_CONANFILE": "foobar.py"}):
+        save(os.path.join(self.tmp_folder, "foobar.py"), conanfile)
+        with environment_append({"CONAN_CONANFILE": "foobar.py"}):
             self.packager = ConanMultiPackager(username="pepe",
                                                channel="mychannel",
                                                out=self.output.write)
@@ -267,7 +271,7 @@ class Pkg(ConanFile):
             self.packager.run()
         self.assertIn("conanfile                 | foobar.py", self.output)
 
-        tools.save(os.path.join(self.tmp_folder, "custom_recipe.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "custom_recipe.py"), conanfile)
         self.packager = ConanMultiPackager(username="pepe",
                                            channel="mychannel",
                                            conanfile="custom_recipe.py",
@@ -277,7 +281,7 @@ class Pkg(ConanFile):
         self.assertIn("conanfile                 | custom_recipe.py", self.output)
 
     def test_partial_reference(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "foobar"
     version = "0.1.0"
@@ -285,8 +289,8 @@ class Pkg(ConanFile):
     def configure(self):
         self.output.info("hello all")
 """
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
-        with tools.environment_append({"CONAN_REFERENCE": "foobar/0.1.0@"}):
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        with environment_append({"CONAN_REFERENCE": "foobar/0.1.0@"}):
             self.packager = ConanMultiPackager(out=self.output.write)
             self.packager.add({}, {}, {}, {})
             self.packager.run()
@@ -298,7 +302,7 @@ class Pkg(ConanFile):
         self.assertIn("partial_reference         | foobar/0.1.0@", self.output)
 
     def test_save_packages_summary(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "foobar"
     version = "0.1.0"
@@ -307,7 +311,7 @@ class Pkg(ConanFile):
         self.output.info("hello all")
 """
         json_file = 'cpt_summary_file.json'
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
         self.packager = ConanMultiPackager(out=self.output.write)
         self.packager.add({}, {}, {}, {})
         self.packager.run(summary_file=json_file)
@@ -327,7 +331,7 @@ class Pkg(ConanFile):
             self.assertFalse(json_data[0]["package"]["error"])
 
         json_file = "__" + json_file
-        with tools.environment_append({"CPT_SUMMARY_FILE": json_file}):
+        with environment_append({"CPT_SUMMARY_FILE": json_file}):
             self.packager = ConanMultiPackager(out=self.output.write)
             self.packager.add({}, {}, {}, {})
             self.packager.run()
@@ -337,27 +341,27 @@ class Pkg(ConanFile):
                 self.assertFalse(json_data[0]["package"]["error"])
 
     def test_disable_test_folder(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     name = "lib"
     version = "1.0"
 """
         self.save_conanfile(conanfile)
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     def test(self):
         raise Exception("Should not run")
 """
-        tools.save(os.path.join(self.tmp_folder, "test_package", "conanfile.py"), conanfile)
-        with tools.environment_append({"CPT_TEST_FOLDER": "False"}):
+        save(os.path.join(self.tmp_folder, "test_package", "conanfile.py"), conanfile)
+        with environment_append({"CPT_TEST_FOLDER": "False"}):
             self.packager = ConanMultiPackager(out=self.output.write)
             self.packager.add_common_builds()
             self.packager.run()
 
     def test_invalid_test_folder(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 
 class Pkg(ConanFile):
     name = "lib"
@@ -365,7 +369,7 @@ class Pkg(ConanFile):
 """
         self.save_conanfile(conanfile)
         for test_folder in ["True", "foobar"]:
-            with tools.environment_append({"CPT_TEST_FOLDER": test_folder}):
+            with environment_append({"CPT_TEST_FOLDER": test_folder}):
                 self.packager = ConanMultiPackager(out=self.output.write)
                 self.packager.add_common_builds()
                 with self.assertRaises(ConanException) as raised:
@@ -375,7 +379,7 @@ class Pkg(ConanFile):
                                   str(raised.exception))
 
     def test_custom_name_version(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 from datetime import date
 class Pkg(ConanFile):
 
@@ -387,9 +391,9 @@ class Pkg(ConanFile):
 
     def set_version(self):
         today = date.today()
-        self.version = today.strftime("%Y%B%d")
+        self.version = today.strftime("%Y%B%d").lower() # conan2 only allows lower cases
 """
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
         self.packager = ConanMultiPackager(out=self.output.write)
         self.packager.add_common_builds(pure_c=False)
         self.packager.run()
@@ -405,7 +409,7 @@ class Pkg(ConanFile):
         self.packager.run()
 
     def _test_header_only(self, default_value):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "qux"
     version = "0.1.0"
@@ -419,22 +423,22 @@ class Pkg(ConanFile):
             del self.options.fPIC
 
     def package_id(self):
-        if self.options.header_only:
+        if self.info.options.header_only:
             self.info.header_only()
 """ % default_value
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
         self.packager = ConanMultiPackager(out=self.output.write)
         self.packager.add_common_builds(pure_c=False)
 
         header_only = 0
         for build in self.packager.builds:
             _, options, _, _ = build
-            if options.get("qux:header_only") == (not default_value):
+            if options.get(f"qux{"/*" if use_pattern else ""}:header_only") == (not default_value):
                 header_only += 1
         return header_only
 
     def test_build_all_option_values(self):
-        conanfile = """from conans import ConanFile
+        conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "qux"
     version = "0.1.0"
@@ -447,7 +451,7 @@ class Pkg(ConanFile):
     def configure(self):
         self.output.info("hello all")
 """
-        tools.save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
+        save(os.path.join(self.tmp_folder, "conanfile.py"), conanfile)
         self.packager = ConanMultiPackager(out=self.output.write)
         self.packager.add_common_builds(pure_c=False, build_all_options_values=["qux:foo", "qux:bar", "qux:blah"])
         self.packager.run()

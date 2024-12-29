@@ -7,11 +7,20 @@ import tempfile
 import time
 from six import BytesIO
 
-from conans.client.tools.files import untargz
-from conans.client.tools.win import get_cased_path
-from conans.errors import ConanException
-from conans.paths import PACKAGE_TGZ_NAME
-from conans.test import CONAN_TEST_FOLDER
+from cpt._compat import CONAN_V2
+
+if CONAN_V2:
+    from conan.tools.files.files import untargz
+    from conans.client.subsystems import get_cased_path
+    from conan.errors import ConanException
+    from conan.internal.paths import PACKAGE_TGZ_NAME
+    from conan.test.utils.test_files import CONAN_TEST_FOLDER
+else:
+    from conans.client.tools.files import untargz
+    from conans.client.tools.win import get_cased_path
+    from conans.errors import ConanException
+    from conans.paths import PACKAGE_TGZ_NAME
+    from conans.test import CONAN_TEST_FOLDER
 from conans.util.files import gzopen_without_timestamps
 
 

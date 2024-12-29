@@ -18,15 +18,17 @@ if CONAN_V2:
     from conan.internal.api.uploader import UPLOAD_POLICY_FORCE
     from conan.api.conan_api import ConanAPI
     from conans.util.runners import conan_run
-    from conan.tools.files import load as _load, save as _save
+    from conan.tools.files import load as _load, save as _save, replace_in_file
     from conans.model.recipe_ref import RecipeReference
     from conans.util.files import chdir
     import tempfile
     from conan.tools.scm import Version
     from collections import namedtuple
-    from conan.errors import ConanInvalidConfiguration
+    from conan.errors import ConanInvalidConfiguration, ConanException
     from conans.model.conf import ConfDefinition
-    
+    from conans.model.package_ref import PkgReference as PackageReference
+    from conan.internal.conan_app import ConanApp
+
     from contextlib import contextmanager
 
     use_pattern = True
@@ -83,7 +85,7 @@ if CONAN_V2:
 
         @property
         def app(self):
-            return self
+            return ConanApp(self)
         
         @property
         def loader(self):
@@ -91,17 +93,9 @@ if CONAN_V2:
         
         def load_named(self, path, a1, a2, a3, a4):
             from conan.internal.conan_app import ConanApp
+            
             app = ConanApp(ConanAPI(self.cache_folder))
             return app.loader.load_named(path, a1, a2, a3, a4)
-        
-        def create(self, conanfile_path, version, profile_build, build_modes):
-            from conan.cli.cli import Cli
-            cli = Cli(self)
-            cli.add_commands()
-            print(cli.run(["create", conanfile_path, "--version", version, "--build", build_modes[0] + "/" + version,
-                            "--profile:build", profile_build.profiles[0],
-                            "--profile:host", profile_build.profiles[0] ]))
-            
             
 
     def _load_profile(profile_abs_path, conan_api, client_cache):
@@ -165,9 +159,32 @@ include(%s)
         # when composing existing global.conf and new settings
         # in conan2 this compatibility was removed so we need to evaluate
         return  ConfDefinition._get_evaluated_value(value)
+    
+    import os
 
+
+    def get_env(env_key, default=None, environment=None):
+        """Get the env variable associated with env_key"""
+        if environment is None:
+            environment = os.environ
+
+        env_var = environment.get(env_key, default)
+        if env_var != default:
+            if isinstance(default, str):
+                return env_var
+            elif isinstance(default, bool):
+                return env_var == "1" or env_var == "True"
+            elif isinstance(default, int):
+                return int(env_var)
+            elif isinstance(default, float):
+                return float(env_var)
+            elif isinstance(default, list):
+                if env_var.strip():
+                    return [var.strip() for var in env_var.split(",")]
+                return []
+        return env_var
 else:
-    from conans.tools import environment_append, which, no_op, os_info
+    from conans.tools import environment_append, which, no_op, os_info, replace_in_file
     from conans.client.conan_api import Conan
     from conans.client.runner import ConanRunner
     
@@ -179,7 +196,11 @@ else:
     from conans.model.version import Version
     from conans.client import profile_loader
     from conans.client.cmd.uploader import UPLOAD_POLICY_FORCE
-    from conans.errors import ConanInvalidConfiguration
+    from conans.errors import ConanInvalidConfiguration, ConanException
+    from conans.util.env_reader import get_env
+    from conans.model.ref import PackageReference
+
+
 
     def get_evaluated_value(value):
         return  value
@@ -215,12 +236,20 @@ def load_remotes(conan_api):
 
 def get_default_profile_path(conan_api):
     if CONAN_V2:
-        return conan_api.profiles.get_default_host()
+        # create default profile if it doesn't already exist, in v1 this was handled by conan
+        profile_pathname = conan_api.profiles.get_path("default", os.getcwd(), exists=False)
+        if not os.path.exists(profile_pathname):
+            detected_profile = conan_api.profiles.detect()
+            contents = detected_profile.dumps()
+            save(profile_pathname, contents)
+        return profile_pathname
     else:
         return conan_api.app.cache.default_profile_path
     
 def get_global_conf(conan_api):
-    if CONAN_V2:
+    from cpt.test.unit.utils import MockConanAPI
+
+    if CONAN_V2 and not isinstance(conan_api, MockConanAPI):
         from conan.api.subapi.config import HomePaths
         ConanAPI(None).config.global_conf
         cache_folder = conan_api.cache_folder
@@ -242,14 +271,14 @@ def create_package(self: 'CreateRunner', name, version, channel, user, profile_b
             self._conanfile, "--version", str(version), "--name", name,
             "--user", user, "--channel", channel,
             "-l", self._lockfile,
-            "-tf", self._test_folder,
             "-pr", self._profile_abs_path
         ]
-        
+        cmd.extend(["-tf", self._test_folder or ""])
         if self._update_dependencies:
             cmd.append("-u")
         if self._build_policy:
-            cmd.extend([f"-b {b}" for b in self._build_policy])
+            for policy in self._build_policy:
+                cmd.extend(["-b", policy])
 
         self._results = create.method(self._conan_api, ArgumentParser(), cmd)["graph"].serialize()
     else:
@@ -267,18 +296,16 @@ def create_package(self: 'CreateRunner', name, version, channel, user, profile_b
 def upload_package(self: 'CreateRunner', client_version: Version):
     if CONAN_V2:
         for installed in list(self._results["nodes"].values())[1:]:
-            reference = str(ConanFileReference.loads(installed["ref"]))
-            if ((reference == str(self._reference)) or
-            (reference in self._upload_dependencies) or
+            reference = RecipeReference.loads(installed["ref"])
+            if ((str(reference) == str(self._reference)) or
+            (str(reference) in self._upload_dependencies) or
             ("all" in self._upload_dependencies)):
                 package_id = installed['package_id']
                 if installed["binary"] == "Build":
-                    if "@" not in reference:
-                        reference += "@"
                     if self._upload_only_recipe:
-                        self._uploader.upload_recipe(reference, self._upload)
+                        self._uploader.upload_recipe(repr(reference), self._upload)
                     else:
-                        self._uploader.upload_packages(reference,
+                        self._uploader.upload_packages(repr(reference),
                                                     self._upload, package_id)
                 else:
                     self.printer.print_message("Skipping upload for %s, "

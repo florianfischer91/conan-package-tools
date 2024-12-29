@@ -1,20 +1,18 @@
-from conans.client import tools
-from conans.errors import ConanException
 from cpt.test.utils.test_files import temp_folder
 
 from cpt.test.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
 from cpt.test.unit.utils import MockCIManager
-
+from cpt._compat import CONAN_V2, ConanException, environment_append
 
 class UploadTest(BaseTest):
 
-    conanfile = """from conans import ConanFile
+    conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "lib"
     version = "1.0"
     options = {"shared": [True, False]}
-    default_options = "shared=False"
+    default_options = {"shared": False}
 
 """
     ci_manager = MockCIManager()
@@ -40,7 +38,7 @@ class Pkg(ConanFile):
         self.assertNotIn("Uploading packages", self.output)
 
     def test_no_credentials_but_skip(self):
-        with tools.environment_append({"CONAN_NON_INTERACTIVE": "1"}):
+        with environment_append({"CONAN_NON_INTERACTIVE": "1"}):
             self.save_conanfile(self.conanfile)
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
                                     ci_manager=self.ci_manager,
@@ -48,8 +46,13 @@ class Pkg(ConanFile):
                                             True, "my_upload_remote"),
                                     skip_check_credentials=True)
             mp.add({}, {}, {})
-            with self.assertRaisesRegexp(ConanException, "Errors uploading some packages"):
-                mp.run()
+            if CONAN_V2:
+                with self.assertRaisesRegexp(ConanException, "doesn't seem like a valid"):
+                    mp.run()
+            else:
+                with self.assertRaisesRegexp(ConanException, "Errors uploading some packages"):
+                    mp.run()
+                
             self.assertIn("Uploading packages for", self.output)
             self.assertIn("Credentials not specified but 'skip_check_credentials' activated",
                           self.output)
@@ -67,7 +70,7 @@ class Pkg(ConanFile):
 
     def test_no_credentials_only_url(self):
         self.save_conanfile(self.conanfile)
-        with tools.environment_append({"CONAN_PASSWORD": "mypass"}):
+        with environment_append({"CONAN_PASSWORD": "mypass"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
                                     ci_manager=self.ci_manager,
                                     upload="https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
@@ -78,7 +81,7 @@ class Pkg(ConanFile):
 
     def test_no_credentials_only_url_skip_check(self):
         self.save_conanfile(self.conanfile)
-        with tools.environment_append({"CONAN_PASSWORD": "mypass",
+        with environment_append({"CONAN_PASSWORD": "mypass",
                                        "CONAN_UPLOAD_ONLY_WHEN_STABLE": "1"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
                                     channel="my_channel",
@@ -90,7 +93,7 @@ class Pkg(ConanFile):
 
     def test_upload_only_stable(self):
         self.save_conanfile(self.conanfile)
-        with tools.environment_append({"CONAN_PASSWORD": "mypass",
+        with environment_append({"CONAN_PASSWORD": "mypass",
                                        "CONAN_SKIP_CHECK_CREDENTIALS": "1"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
                                     ci_manager=self.ci_manager,
@@ -99,9 +102,13 @@ class Pkg(ConanFile):
             self.assertNotIn("Wrong user or password", self.output)
 
     def test_existing_upload_repo(self):
-        self.api.remote_add("my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
+        if CONAN_V2:
+            from conan.api.model import Remote
+            self.api.remotes.add(Remote("my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan", True))
+        else:
+            self.api.remote_add("my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
         self.save_conanfile(self.conanfile)
-        with tools.environment_append({"CONAN_PASSWORD": "mypass"}):
+        with environment_append({"CONAN_PASSWORD": "mypass"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
                                     ci_manager=self.ci_manager,
                                     upload=["https://uilianr.jfrog.io/artifactory/api/conan/public-conan",
@@ -117,10 +124,14 @@ class Pkg(ConanFile):
                           "already exist, keeping the current remote and its name", self.output)
 
     def test_existing_upload_repo_by_name(self):
-        self.api.remote_add("upload_repo",
+        if CONAN_V2:
+            from conan.api.model import Remote
+            self.api.remotes.add(Remote("upload_repo", "https://foobar.jfrog.io/artifactory/api/conan/public-conan", True))
+        else:
+            self.api.remote_add("upload_repo",
                             "https://foobar.jfrog.io/artifactory/api/conan/public-conan")
         self.save_conanfile(self.conanfile)
-        with tools.environment_append({"CONAN_PASSWORD": "mypass",
+        with environment_append({"CONAN_PASSWORD": "mypass",
                                        "CONAN_UPLOAD": "https://uilianr.jfrog.io/artifactory/api/conan/public-conan"
                                       }):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
@@ -131,5 +142,8 @@ class Pkg(ConanFile):
                 self.assertTrue(any("Wrong user or password" in context.exception,
                                     "blocked due to recurrent login failures"  in context.exception))
             self.assertNotIn("already exist, keeping the current remote and its name", self.output)
-            repo = self.api.get_remote_by_name("upload_repo")
+            if CONAN_V2:
+                repo = self.api.remotes.get("upload_repo")
+            else:
+                repo = self.api.get_remote_by_name("upload_repo")
             self.assertEquals(repo.url, "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")

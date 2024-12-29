@@ -1,6 +1,8 @@
 import os
 from six import string_types
 
+from cpt._compat import CONAN_V2
+
 
 class AuthManager(object):
 
@@ -102,8 +104,11 @@ class AuthManager(object):
                                            "activated, trying to use pre-stored user/password in "
                                            "local cache")
                 return
-
-        self._conan_api.authenticate(user, password, remote_name)
+        if CONAN_V2:
+            remote = self._conan_api.remotes.get(remote_name)
+            self._conan_api.remotes.user_login(remote,user,password)
+        else:
+            self._conan_api.authenticate(user, password, remote_name)
         self.printer.print_message("OK! '%s' user logged in '%s' " % (user, remote_name))
 
     def env_vars(self):

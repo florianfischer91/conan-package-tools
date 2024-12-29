@@ -1,5 +1,4 @@
-from conans.model.ref import ConanFileReference
-
+from cpt._compat import ConanFileReference
 
 class GenConanfile(object):
     """

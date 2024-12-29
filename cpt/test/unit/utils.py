@@ -3,8 +3,7 @@ from collections import namedtuple
 
 import mock
 
-from conans import tools
-from conans.model.ref import ConanFileReference
+from cpt._compat import ConanFileReference, replace_in_file, CONAN_V2
 from cpt.test.utils.test_files import temp_folder
 from conans.util.files import save
 from conans.model.version import Version
@@ -44,6 +43,9 @@ class MockConanAPI(object):
         self._client_cache = self._cache = MockConanCache()
         self.app = mock.Mock()
         self.app.cache = self._client_cache
+        if CONAN_V2:
+            self.config = mock.Mock()
+            self.config.config_install = self.config_install
 
     def create(self, *args, **kwargs):
         reference = ConanFileReference(kwargs["name"], kwargs["version"], kwargs["user"], kwargs["channel"])
@@ -96,7 +98,7 @@ class MockConanAPI(object):
             profile_name = call.kwargs["profile_name"]
         else:
             profile_name = call.kwargs["profile_names"][0]
-        tools.replace_in_file(profile_name, "include", "#include")
+        replace_in_file(profile_name, "include", "#include")
         return read_profile(profile_name, os.path.dirname(profile_name), None)[0]
 
     def reset(self):

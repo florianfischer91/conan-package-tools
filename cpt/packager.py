@@ -51,6 +51,7 @@ def load_cf_class(path, conan_api):
         # TODO Fix python requires for v2
         if client_version < Version("2"):
             conan_api.app.python_requires.enable_remotes(remotes=remotes)
+
         if client_version < Version("1.20.0"):
             return conan_api.app.loader.load_class(path)
         elif client_version < Version("1.21.0"):
@@ -59,7 +60,8 @@ def load_cf_class(path, conan_api):
             # TODO Fix for v2
             if client_version < Version("2"):
                 conan_api.app.pyreq_loader.enable_remotes(remotes=remotes)
-            return conan_api.app.loader.load_named(path, None, None, None, None)
+                return conan_api.app.loader.load_named(path, None, None, None, None)
+            return conan_api.app.loader.load_named(path, None, None, None, None, remotes=remotes)
 
 
 class PlatformInfo(object):

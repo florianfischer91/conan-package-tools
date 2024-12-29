@@ -2,6 +2,8 @@ import os
 from collections import namedtuple
 from six import string_types
 
+from cpt._compat import CONAN_V2
+
 
 class Remote(namedtuple("Remote", "url use_ssl name")):
 
@@ -106,7 +108,11 @@ class RemotesManager(object):
             raise Exception("Invalid %s env var format, check README" % var_name)
 
     def _get_remote_by_url(self, remote_url):
-        remotes = self._conan_api.remote_list()
+        if CONAN_V2:
+            remotes = self._conan_api.remotes.list()
+        else:
+            remotes = self._conan_api.remote_list()
+
         for remote in remotes:
             if remote.url == remote_url:
                 return remote.name, remotes
@@ -131,9 +137,16 @@ class RemotesManager(object):
         # A rename won't be good, because the remote is really different, it happens in local
         # when "upload_repo" is kept
         if remote:
-            self._conan_api.remote_remove(name)
+            if CONAN_V2:
+                self._conan_api.remotes.remove(name)
+            else:
+                self._conan_api.remote_remove(name)
 
-        self._conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
+        if CONAN_V2:
+            from conan.api.model import Remote
+            self._conan_api.remotes.add(Remote(name, url, verify_ssl=verify_ssl), index=insert)
+        else:
+            self._conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
         return name
 
     @property

@@ -1,6 +1,6 @@
 import unittest
 
-from conans.client.tools import environment_append
+from cpt._compat import environment_append, CONAN_V2
 from cpt.test.utils.tools import TestClient, TestServer
 from cpt.test.unit.utils import MockCIManager
 from cpt.test.test_client.tools import get_patched_multipackager
@@ -9,7 +9,7 @@ from cpt.test.test_client.tools import get_patched_multipackager
 
 class UpdateTest(unittest.TestCase):
 
-    conanfile_bar = """from conans import ConanFile
+    conanfile_bar = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "bar"
     version = "0.1.0"
@@ -18,47 +18,47 @@ class Pkg(ConanFile):
         pass
     """
 
-    conanfile_foo = """from conans import ConanFile
+    conanfile_foo = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "foo"
     version = "1.0.0"
     options = {"shared": [True, False]}
-    default_options = "shared=True"
+    default_options = {"shared": True}
 
     def build(self):
         pass
     """
 
-    conanfile_foo_2 = """from conans import ConanFile
+    conanfile_foo_2 = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "foo"
     version = "1.0.0"
     options = {"shared": [True, False]}
-    default_options = "shared=False"
+    default_options = {"shared": False}
 
     def build(self):
         self.output.info("new foo")
     """
 
-    conanfile_foo_3 = """from conans import ConanFile
+    conanfile_foo_3 = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "qux"
     version = "1.0.0"
     options = {"shared": [True, False]}
-    default_options = "shared=False"
+    default_options = {"shared": False}
 
     def build(self):
         self.output.info("qux")
     """
 
-    conanfile = """from conans import ConanFile
+    conanfile = """from conan import ConanFile
 class Pkg(ConanFile):
     name = "foobar"
     version = "2.0"
     requires = "bar/0.1.0@foo/stable", "foo/1.0.0@bar/testing", "qux/1.0.0"
 
     def build(self):
-        self.output.warn("BUILDING")
+        self.output.warning("BUILDING")
 """
 
     def setUp(self):
@@ -66,15 +66,21 @@ class Pkg(ConanFile):
         self._server = TestServer(users={"user": "password"},
                                   write_permissions=[("bar/0.1.0@foo/stable", "user"),
                                                      ("foo/1.0.0@bar/testing", "user"),
-                                                     ("qux/1.0.0", "user")])
-        self._client = TestClient(servers={"default": self._server},
+                                                     ("foo/1.0.0@user/testing", "user"),
+                                                     ("qux/1.0.0@_/_", "user"),
+                                                     ("foobar/2.0@user/testing", "user")])
+        if CONAN_V2:
+            self._client = TestClient(servers={"default": self._server},
+                                  inputs=["user", "password"])
+        else:
+            self._client = TestClient(servers={"default": self._server},
                                   users={"default": [("user", "password")]})
         self._client.save({"conanfile_bar.py": self.conanfile_bar})
-        self._client.run("export conanfile_bar.py foo/stable")
+        self._client.run(f"export conanfile_bar.py { '--user=foo --channel=stable' if CONAN_V2 else 'foo/stable'}")
         self._client.save({"conanfile_foo.py": self.conanfile_foo})
-        self._client.run("export conanfile_foo.py bar/testing")
+        self._client.run(f"export conanfile_foo.py { '--user=bar --channel=testing' if CONAN_V2 else 'bar/testing'}")
         self._client.save({"conanfile_foo3.py": self.conanfile_foo_3})
-        self._client.run("export conanfile_foo3.py")
+        self._client.run(f"export conanfile_foo3.py")
         self._client.save({"conanfile.py": self.conanfile})
 
     def test_update_all_dependencies(self):
@@ -90,12 +96,22 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
-            mulitpackager.run()
+            if CONAN_V2:
+                from conan.test.utils.mocks import RedirectedTestOutput
+                from conan.test.utils.tools import redirect_output
+                output = RedirectedTestOutput()
+                with self._client.mocked_servers(), redirect_output(output):
+                    mulitpackager.run()
+                    out = str(output)
+            else:
+                mulitpackager.run()
+                out = str(self._client.out)
 
-            self.assertIn("Uploading packages for 'foobar/2.0@user/testing'", self._client.out)
-            self.assertIn("Uploading packages for 'bar/0.1.0@foo/stable'", self._client.out)
-            self.assertIn("Uploading packages for 'foo/1.0.0@bar/testing'", self._client.out)
-            self.assertIn("Uploading packages for 'qux/1.0.0@'", self._client.out)
+            tmpl = "Uploading package '{0}" if CONAN_V2 else "Uploading packages for '{0}'"
+
+            for pkg in  ("foobar/2.0@user/testing","bar/0.1.0@foo/stable", 
+                        "foo/1.0.0@bar/testing", "qux/1.0.0"):
+                self.assertIn(tmpl.format(pkg), out)
 
             # Upload new version of foo/1.0.0@bar/testing and re-add old revision in local cache
             self._client.save({"conanfile_foo.py": self.conanfile_foo_2})
@@ -106,11 +122,21 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager,
                                                       conanfile="conanfile_foo.py")
             mulitpackager.add({}, {})
-            mulitpackager.run()
+            if CONAN_V2:
+                from conan.test.utils.mocks import RedirectedTestOutput
+                from conan.test.utils.tools import redirect_output
+                output = RedirectedTestOutput()
+                with self._client.mocked_servers(), redirect_output(output):
+                    mulitpackager.run()
+            else:
+                mulitpackager.run()
 
-            self._client.run("remove -f foo/1.0.0@bar/testing")
+            if CONAN_V2:
+                self._client.run("remove -c foo/1.0.0@bar/testing")
+            else:
+                self._client.run("remove -f foo/1.0.0@bar/testing")
             self._client.save({"conanfile_foo.py": self.conanfile_foo})
-            self._client.run("export conanfile_foo.py bar/testing")
+            self._client.run(f"export conanfile_foo.py  { '--user=bar --channel=testing' if CONAN_V2 else 'bar/testing'}")
 
             # build again and update newest revision from remote
             mulitpackager = get_patched_multipackager(self._client, username="user",
@@ -119,5 +145,11 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
-            mulitpackager.run()
-            self.assertIn("foo/1.0.0@bar/testing: Package installed", self._client.out)
+            if CONAN_V2:
+                with self._client.mocked_servers(), redirect_output(output):
+                    mulitpackager.run()
+                    out = str(output)
+            else:
+                mulitpackager.run()
+                out = str(self._client.out)
+            self.assertIn("foo/1.0.0@bar/testing: Package installed", out)
