@@ -28,8 +28,10 @@ if CONAN_V2:
     from conans.model.conf import ConfDefinition
     from conans.model.package_ref import PkgReference as PackageReference
     from conan.internal.conan_app import ConanApp
+    from conan.api.model import Remote
 
     from contextlib import contextmanager
+    import os
 
     use_pattern = True
     
@@ -160,9 +162,6 @@ include(%s)
         # in conan2 this compatibility was removed so we need to evaluate
         return  ConfDefinition._get_evaluated_value(value)
     
-    import os
-
-
     def get_env(env_key, default=None, environment=None):
         """Get the env variable associated with env_key"""
         if environment is None:
@@ -183,6 +182,16 @@ include(%s)
                     return [var.strip() for var in env_var.split(",")]
                 return []
         return env_var
+    
+    def add_remote(conan_api: ConanAPI, name: str, url: str, verify_ssl: bool, insert: int=None):
+        conan_api.remotes.add(Remote(name, url, verify_ssl=verify_ssl), index=insert)
+
+    def remove_remote(conan_api: ConanAPI, name: str):
+        conan_api.remotes.remove(name)
+
+    def list_remotes(conan_api: ConanAPI):
+        return conan_api.remotes.list()
+
 else:
     from conans.tools import environment_append, which, no_op, os_info, replace_in_file
     from conans.client.conan_api import Conan
@@ -332,3 +341,12 @@ def upload_package(self: 'CreateRunner', client_version: Version):
                 else:
                     self.printer.print_message("Skipping upload for %s, "
                                             "it hasn't been built" % package_id)
+                    
+    def add_remote(conan_api: ConanAPI, name: str, url: str, verify_ssl: bool, insert: int=None):
+        conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
+
+    def remove_remote(conan_api: ConanAPI, name: str):
+        conan_api.remote_remove(name)
+
+    def list_remotes(conan_api):
+        return conan_api.remote_list()

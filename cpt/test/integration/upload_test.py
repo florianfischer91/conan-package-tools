@@ -3,7 +3,7 @@ from cpt.test.utils.test_files import temp_folder
 from cpt.test.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
 from cpt.test.unit.utils import MockCIManager
-from cpt._compat import CONAN_V2, ConanException, environment_append
+from cpt._compat import CONAN_V2, ConanException, add_remote, environment_append
 
 class UploadTest(BaseTest):
 
@@ -102,11 +102,8 @@ class Pkg(ConanFile):
             self.assertNotIn("Wrong user or password", self.output)
 
     def test_existing_upload_repo(self):
-        if CONAN_V2:
-            from conan.api.model import Remote
-            self.api.remotes.add(Remote("my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan", True))
-        else:
-            self.api.remote_add("my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
+        add_remote(self.api, "my_upload_repo", "https://uilianr.jfrog.io/artifactory/api/conan/public-conan", True)
+
         self.save_conanfile(self.conanfile)
         with environment_append({"CONAN_PASSWORD": "mypass"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
@@ -124,12 +121,8 @@ class Pkg(ConanFile):
                           "already exist, keeping the current remote and its name", self.output)
 
     def test_existing_upload_repo_by_name(self):
-        if CONAN_V2:
-            from conan.api.model import Remote
-            self.api.remotes.add(Remote("upload_repo", "https://foobar.jfrog.io/artifactory/api/conan/public-conan", True))
-        else:
-            self.api.remote_add("upload_repo",
-                            "https://foobar.jfrog.io/artifactory/api/conan/public-conan")
+        add_remote(self.api, "upload_repo", "https://foobar.jfrog.io/artifactory/api/conan/public-conan", True)
+
         self.save_conanfile(self.conanfile)
         with environment_append({"CONAN_PASSWORD": "mypass",
                                        "CONAN_UPLOAD": "https://uilianr.jfrog.io/artifactory/api/conan/public-conan"
