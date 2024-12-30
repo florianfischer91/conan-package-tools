@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from cpt._compat import CONAN_V2, mkdir_tmp, Conan, save, chdir, Version
+from cpt._compat import CONAN_HOME_ENV_VAR, mkdir_tmp, Conan, save, chdir, Version
 from conan import conan_version as client_version
 
 from cpt.test.utils.tools import TestBufferConanOutput
@@ -22,7 +22,7 @@ class BaseTest(unittest.TestCase):
         os.chdir(self.tmp_folder)
         # user_home = "c:/tmp/home"  # Cache
         self.old_env = dict(os.environ)
-        os.environ.update({"CONAN_HOME" if CONAN_V2 else "CONAN_USER_HOME": self.conan_home, "CONAN_PIP_PACKAGE": "0"})
+        os.environ.update({CONAN_HOME_ENV_VAR: self.conan_home, "CONAN_PIP_PACKAGE": "0"})
         self.output = TestBufferConanOutput()
         self.api, _, _ = Conan.factory()
         self.api.create_app()

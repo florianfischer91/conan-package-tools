@@ -11,7 +11,7 @@ from cpt import __version__ as package_tools_version, get_client_version
 from cpt.config import ConfigManager, GlobalConf
 from cpt.printer import Printer
 from cpt.profiles import load_profile, patch_default_base_profile
-from cpt._compat import no_op, load, environment_append, ConanFileReference, ProfileData, chdir, CONAN_V2, create_package, upload_package, vcvars, which
+from cpt._compat import CONAN_HOME_ENV_VAR, no_op, load, environment_append, ConanFileReference, ProfileData, chdir, CONAN_V2, create_package, upload_package, vcvars, which
 
 
 class CreateRunner(object):
@@ -345,7 +345,7 @@ class DockerCreateRunner(object):
 
     def get_env_vars(self):
         ret = {key: value for key, value in os.environ.items() if key.startswith("CONAN_") and
-               key != "CONAN_USER_HOME"}
+               key != CONAN_HOME_ENV_VAR}
         ret["CONAN_REFERENCE"] = self._reference
 
         ret["CPT_PROFILE"] = escape_env(self._profile_text)

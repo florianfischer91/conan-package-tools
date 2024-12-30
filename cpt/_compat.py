@@ -12,6 +12,7 @@ use_pattern = False
 if TYPE_CHECKING:
     from cpt.runner import CreateRunner
 
+CONAN_HOME_ENV_VAR = "CONAN_HOME" if CONAN_V2 else "CONAN_USER_HOME"
 
 if CONAN_V2:
     from conan.internal.api.profile import profile_loader
@@ -34,6 +35,9 @@ if CONAN_V2:
     import os
 
     use_pattern = True
+
+    if os.environ.get("CONAN_USER_HOME"):
+        raise Exception("Use 'CONAN_HOME' instead of 'CONAN_USER_HOME", os.environ.get("CONAN_USER_HOME"))
     
     class ProfileData(namedtuple("ProfileData", ["profiles", "settings", "options", "env", "conf"])):
         def __bool__(self):
