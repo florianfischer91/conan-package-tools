@@ -12,10 +12,10 @@ class RemotesTest(unittest.TestCase):
         self.conan_api = MockConanAPI()
 
     def assert_serial_deserial(self, manager, expected):
-        self.assertEquals(manager.env_vars(), expected)
+        self.assertEqual(manager.env_vars(), expected)
         with environment_append(expected):
             manager = RemotesManager(self.conan_api, Printer())
-            self.assertEquals(manager.env_vars(), expected)
+            self.assertEqual(manager.env_vars(), expected)
 
     def test_plain(self):
         manager = RemotesManager(self.conan_api, Printer(), remotes_input="url1, url", upload_input="url1")

@@ -23,10 +23,7 @@ class Pkg(ConanFile):
     def test_toolsets_works(self):
 
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs=["user", "password"])
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user",
@@ -34,16 +31,9 @@ class Pkg(ConanFile):
             mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mulitpackager.add_common_builds(reference="lib/1.0@user/stable",
                                             shared_option_name=False)
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if platform.system() == "Windows":
                 self.assertIn("Uploading package 1/4", out)
                 self.assertIn("Uploading package 2/4", out)

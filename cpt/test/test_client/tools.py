@@ -6,16 +6,15 @@ from cpt import get_client_version
 from cpt.packager import ConanMultiPackager
 from cpt._compat import Conan, CONAN_V2
 
+
+
 def get_patched_multipackager(tc, *args, **kwargs):
     client_version = get_client_version()
     extra_init_kwargs = {}
     if Version("1.11") < Version(client_version) < Version("1.18"):
         extra_init_kwargs.update({'requester': tc.requester})
-    elif Version(client_version) >= Version("2"):
-        from conan.test.utils.tools import TestRequester
-        # extra_init_kwargs.update({'http_requester': TestRequester(tc.servers)})
 
-    elif Version(client_version) >= Version("1.18"):
+    elif Version("2") > Version(client_version) >= Version("1.18"):
         extra_init_kwargs.update({'http_requester': tc.requester})
 
     if Version(client_version) < Version("1.12.0"):
@@ -28,23 +27,47 @@ def get_patched_multipackager(tc, *args, **kwargs):
     else:
         conan_api = Conan(cache_folder=cache.cache_folder, output=tc.out, **extra_init_kwargs)
 
-    class Printer(object):
 
-        def __init__(self, tc):
-            self.tc = tc
+    if CONAN_V2:
+        from conan.test.utils.mocks import RedirectedTestOutput
+        class Printer(object):
 
-        def __call__(self, contents):
-            if six.PY2:
-                contents = unicode(contents)
-            if CONAN_V2:
-                # TODO fix conan2
-                print(contents)
-            else:
+            def __init__(self, output):
+                self.output = output
+
+            def __call__(self, contents):
+                self.output.write(contents)
+
+            def dump(self):
+                return str(self.output)
+
+        kwargs["out"] = Printer(RedirectedTestOutput())
+    else:
+        class Printer(object):
+
+            def __init__(self, tc):
+                self.tc = tc
+
+            def __call__(self, contents):
+                if six.PY2:
+                    contents = unicode(contents)
                 self.tc.out.write(contents)
+            
+            def dump(self):
+                return str(self.tc.out)
 
-    kwargs["out"] = Printer(tc)
+        kwargs["out"] = Printer(tc)
     kwargs["conan_api"] = conan_api
     kwargs["cwd"] = tc.current_folder
 
     mp = ConanMultiPackager(*args, **kwargs)
+    if CONAN_V2:
+        # in V2, handling the testserver and output works a bit different and we have to use contextmanagers
+        # to keep the changes in the tests as little as possible
+        from conan.test.utils.tools import redirect_output
+        old_run = mp.run
+        def _run(*args, **kwargs):
+            with tc.mocked_servers(), redirect_output(mp.printer.printer.output):
+                old_run(*args, **kwargs)
+        mp.run = _run
     return mp

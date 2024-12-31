@@ -105,7 +105,6 @@ if CONAN_V2:
             
 
     def _load_profile(profile_abs_path, conan_api, client_cache):
-        cache = ConanAPI(conan_api.cache_folder)
         loader = profile_loader.ProfileLoader(conan_api.cache_folder)
         return loader.load_profile("default", profile_abs_path)
     
@@ -212,7 +211,16 @@ else:
     from conans.errors import ConanInvalidConfiguration, ConanException
     from conans.util.env_reader import get_env
     from conans.model.ref import PackageReference
+    from conans.client.api.conan_api import ConanAPIV2 as ConanAPI
 
+    def add_remote(conan_api: ConanAPI, name: str, url: str, verify_ssl: bool, insert: int=None):
+        conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
+
+    def remove_remote(conan_api: ConanAPI, name: str):
+        conan_api.remote_remove(name)
+
+    def list_remotes(conan_api):
+        return conan_api.remote_list()
 
 
     def get_evaluated_value(value):
@@ -346,11 +354,3 @@ def upload_package(self: 'CreateRunner', client_version: Version):
                     self.printer.print_message("Skipping upload for %s, "
                                             "it hasn't been built" % package_id)
                     
-    def add_remote(conan_api: ConanAPI, name: str, url: str, verify_ssl: bool, insert: int=None):
-        conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
-
-    def remove_remote(conan_api: ConanAPI, name: str):
-        conan_api.remote_remove(name)
-
-    def list_remotes(conan_api):
-        return conan_api.remote_list()

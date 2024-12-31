@@ -1,7 +1,7 @@
 import unittest
 
 from cpt._compat import CONAN_V2, environment_append
-from cpt.test.utils.tools import TestClient, TestServer
+from cpt.test.utils.tools import TestClient, TestServer, pos_args
 from cpt.test.unit.utils import MockCIManager
 from cpt.test.test_client.tools import get_patched_multipackager
 
@@ -69,19 +69,15 @@ class Pkg(ConanFile):
                                                      ("foo/1.0.0@bar/testing", "user"),
                                                      ("qux/1.0.0@qux/stable", "user"),
                                                      ("foobar/2.0@user/testing", "user")])
-        if CONAN_V2:
-            self._client = TestClient(servers={"default": self._server},
-                                  inputs=["user", "password"])
-        else:
-            self._client = TestClient(servers={"default": self._server},
+        self._client = TestClient(servers={"default": self._server},
                                   users={"default": [("user", "password")]}
                                   )
         self._client.save({"conanfile_bar.py": self.conanfile_bar})
-        self._client.run(f"export conanfile_bar.py {'--user=foo --channel=stable' if CONAN_V2 else 'foo/stable'}")
+        self._client.run(f"export conanfile_bar.py { pos_args('foo/stable') }")
         self._client.save({"conanfile_foo.py": self.conanfile_foo})
-        self._client.run(f"export conanfile_foo.py {'--user=bar --channel=testing' if CONAN_V2 else 'bar/testing'}")
+        self._client.run(f"export conanfile_foo.py { pos_args('bar/testing') }")
         self._client.save({"conanfile_foo3.py": self.conanfile_foo_3})
-        self._client.run(f"export conanfile_foo3.py {'--user=qux --channel=stable' if CONAN_V2 else 'qux/stable'}")
+        self._client.run(f"export conanfile_foo3.py { pos_args('qux/stable') }")
         self._client.save({"conanfile.py": self.conanfile})
 
     def test_update_some_dependencies(self):
@@ -97,16 +93,8 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with self._client.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(self._client.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             tmpl = "Uploading package '{0}" if CONAN_V2 else "Uploading packages for '{0}'"
 
@@ -122,20 +110,14 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager,
                                                       conanfile="conanfile.py")
             mulitpackager.add({}, {})
-            output.clear()
-            if CONAN_V2:
-                with self._client.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(self._client.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
-            self.assertRegexpMatches(out, r'bar/0.1.0@foo/stable#.* - Cache')
-            self.assertRegexpMatches(out, r'foo/1.0.0@bar/testing#.* - Cache')
-            self.assertRegexpMatches(out, r'qux/1.0.0@qux/stable#.* - Cache')
+            self.assertRegex(out, r'bar/0.1.0@foo/stable#.* - Cache')
+            self.assertRegex(out, r'foo/1.0.0@bar/testing#.* - Cache')
+            self.assertRegex(out, r'qux/1.0.0@qux/stable#.* - Cache')
 
-            self.assertRegexpMatches(out, r'foobar/2.0@user/testing#.* - Build')
+            self.assertRegex(out, r'foobar/2.0@user/testing#.* - Build')
 
             
             self.assertIn(tmpl.format("foobar/2.0@user/testing"), out)

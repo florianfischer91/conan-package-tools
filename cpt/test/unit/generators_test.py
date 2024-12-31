@@ -40,7 +40,7 @@ class GeneratorsTest(unittest.TestCase):
              {},
              {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_mingw_builds(mingw_configurations, ConanFileReference.loads(
             "mingw-w64/8.1"), ["x86"], "pack:shared", ["Release"], ["20"], options={})
@@ -58,7 +58,7 @@ class GeneratorsTest(unittest.TestCase):
              {},
              {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_mingw_builds(mingw_configurations, ConanFileReference.loads(
             "mingw-w64/8.1"), ["x86"], "pack:shared", ["Debug"], ["14"], options={})
@@ -76,7 +76,7 @@ class GeneratorsTest(unittest.TestCase):
              {},
              {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_mingw_builds(mingw_configurations,
                                   ConanFileReference.loads("mingw-w64/8.1"),
@@ -110,7 +110,7 @@ class GeneratorsTest(unittest.TestCase):
              {},
              {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_mingw_builds(mingw_configurations,
                                   ConanFileReference.loads("mingw-w64/8.1"),
@@ -131,7 +131,7 @@ class GeneratorsTest(unittest.TestCase):
              {},
              {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         mingw_configurations = [("4.9", "x86", "dwarf2", "posix")]
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
@@ -244,7 +244,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': False, 'pack:foo': False, 'pack:bar': False}, {},
                      {'*': [ConanFileReference.loads("mingw-w64/8.1")]}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
     def test_get_osx_apple_clang_builds(self):
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
@@ -260,7 +260,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': True}, {}, {}, ref),
                     ({'arch': 'x86_64', 'compiler.libcxx': 'libc++', 'compiler': 'apple-clang', 'compiler.version': '8.0', 'build_type': 'Release'},
                      {'pack:shared': True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], "pack:shared", pure_c=True,
                                             build_types=["Debug", "Release"],
@@ -278,7 +278,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'arch': 'x86_64', 'compiler': 'apple-clang',
                       'compiler.version': '8.0', 'build_type': 'Release'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], "pack:shared", pure_c=False, build_types=["Debug"], cppstds=["14"], options={})
         expected = [({'arch': 'x86_64', 'compiler.libcxx': 'libc++', 'compiler': 'apple-clang',
@@ -287,7 +287,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'arch': 'x86_64', 'compiler.libcxx': 'libc++', 'compiler': 'apple-clang',
                       'compiler.version': '8.0', 'build_type': 'Debug', 'compiler.cppstd': '14'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], "pack:shared", pure_c=True, build_types=["Release"], cppstds=["17"], options={})
         expected = [({'arch': 'x86_64', 'compiler': 'apple-clang',
@@ -296,7 +296,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'arch': 'x86_64', 'compiler': 'apple-clang',
                       'compiler.version': '8.0', 'build_type': 'Release'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], "pack:shared", pure_c=False,
                                             build_types=["Debug", "Release"], cppstds=[None], options={"qux:foobar": False, "foo:pkg": "bar"}, reference=ref)
@@ -312,7 +312,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'arch': 'x86_64', 'compiler.libcxx': 'libc++', 'compiler': 'apple-clang',
                       'compiler.version': '8.0', 'build_type': 'Release'},
                      {'pack:shared': True, "qux:foobar": False, "foo:pkg": "bar"}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], None, pure_c=False,
                                             build_types=["Debug", "Release"],
@@ -324,7 +324,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'arch': 'x86_64', 'compiler.libcxx': 'libc++', 'compiler': 'apple-clang',
                       'compiler.version': '8.0', 'build_type': 'Release'},
                      {"qux:foobar": False, "foo:pkg": "bar"}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
         builds = get_osx_apple_clang_builds(["8.0"], ["x86_64"], "pack:shared", pure_c=False,
@@ -390,7 +390,7 @@ class GeneratorsTest(unittest.TestCase):
                      'compiler.version': '8.0', 'compiler.libcxx': 'libc++'},
                     {'pack:shared': False, 'pack:foo': False, 'pack:bar': False}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
     def test_get_linux_gcc_builds(self):
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=False, build_types=["Debug", "Release"], cppstds=[None], options={})
@@ -410,7 +410,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': True}, {}, {}, None),
                     ({'compiler': 'gcc', 'build_type': 'Release', 'compiler.libcxx': 'libstdc++11', 'compiler.version': '6', 'arch': 'x86_64'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=True, build_types=["Debug", "Release"], cppstds=[None], options={})
         expected = [({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Debug', 'compiler': 'gcc'},
@@ -421,7 +421,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': True}, {}, {}, None),
                     ({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Release', 'compiler': 'gcc'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=False, build_types=["Debug"], cppstds=["14"], options={})
         expected = [({'compiler': 'gcc', 'build_type': 'Debug', 'compiler.libcxx': 'libstdc++',
@@ -436,14 +436,14 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'gcc', 'build_type': 'Debug', 'compiler.libcxx': 'libstdc++11',
                       'compiler.version': '6', 'arch': 'x86_64', 'compiler.cppstd': '14'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=True, build_types=["Debug"], cppstds=["14"], options={})
         expected = [({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Debug', 'compiler': 'gcc'},
                      {'pack:shared': False}, {}, {}, None),
                     ({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Debug', 'compiler': 'gcc'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=False, build_types=["Release"], cppstds=["17"], options={})
         expected = [({'compiler': 'gcc', 'build_type': 'Release', 'compiler.libcxx': 'libstdc++',
@@ -458,14 +458,14 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'gcc', 'build_type': 'Release', 'compiler.libcxx': 'libstdc++11',
                       'compiler.version': '6', 'arch': 'x86_64', 'compiler.cppstd': '17'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=True, build_types=["Release"], cppstds=["17"], options={})
         expected = [({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Release', 'compiler': 'gcc'},
                      {'pack:shared': False}, {}, {}, None),
                     ({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Release', 'compiler': 'gcc'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], "pack:shared", pure_c=False, build_types=["Debug", "Release"],
                                       cppstds=[None], options={"foo:bar": "qux", "pkg:qux": False})
@@ -493,7 +493,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'gcc', 'build_type': 'Release', 'compiler.libcxx': 'libstdc++11',
                       'compiler.version': '6', 'arch': 'x86_64'},
                      {'pack:shared': True, "foo:bar": "qux", "pkg:qux": False}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["6"], ["x86_64"], None, pure_c=True, build_types=["Debug", "Release"],
                                       cppstds=[None], options={"qux:bar": "foo", "*:pkg": False})
@@ -501,7 +501,7 @@ class GeneratorsTest(unittest.TestCase):
                      {"qux:bar": "foo", "*:pkg": False}, {}, {}, None),
                     ({'arch': 'x86_64', 'compiler.version': '6', 'build_type': 'Release', 'compiler': 'gcc'},
                      {"qux:bar": "foo", "*:pkg": False}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_gcc_builds(["9"], ["x86_64"], "pack:shared", pure_c=False,
                                       build_types=["Debug", "Release"], cppstds=[None], options={},
@@ -616,7 +616,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'gcc', 'build_type': 'Release', 'compiler.libcxx': 'libstdc++11',
                       'compiler.version': '9', 'arch': 'x86_64'},
                      {'pack:shared': False, 'pack:foo': False, 'pack:bar': False}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
     def test_get_linux_clang_builds(self):
         self.maxDiff = None
@@ -641,7 +641,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'clang', 'build_type': 'Release', 'compiler.libcxx': 'libc++', 'compiler.version': '4.0', 'arch': 'x86_64'},
                      {'pack:shared': True}, {}, {}, ref)]
         b = [tuple(a) for a in builds]
-        self.assertEquals(b, expected)
+        self.assertEqual(b, expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=True,
                                         build_types=["Debug", "Release"], cppstds=[None], options={}, reference=ref)
@@ -653,7 +653,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': True}, {}, {}, ref),
                     ({'arch': 'x86_64', 'compiler.version': '4.0', 'build_type': 'Release', 'compiler': 'clang'},
                      {'pack:shared': True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=False,
                                         build_types=["Debug"], cppstds=[None], options={}, reference=ref)
@@ -669,7 +669,7 @@ class GeneratorsTest(unittest.TestCase):
                     ({'compiler': 'clang', 'build_type': 'Debug', 'compiler.libcxx': 'libc++', 'compiler.version': '4.0',
                      'arch': 'x86_64'},
                     {'pack:shared': True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=True,
                                         build_types=["Debug"], cppstds=[None], options={}, reference=ref)
@@ -677,7 +677,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': False}, {}, {}, ref),
                     ({'arch': 'x86_64', 'compiler.version': '4.0', 'build_type': 'Debug', 'compiler': 'clang'},
                      {'pack:shared': True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=False,
                                         build_types=["Release"], cppstds=[None], options={}, reference=ref)
@@ -695,7 +695,7 @@ class GeneratorsTest(unittest.TestCase):
                     {'compiler': 'clang', 'build_type': 'Release', 'compiler.libcxx': 'libc++', 'compiler.version': '4.0',
                      'arch': 'x86_64'},
                     {'pack:shared': True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=True, build_types=["Release"],
                                         cppstds=[None], options={}, reference=None)
@@ -703,7 +703,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': False}, {}, {}, None),
                     ({'arch': 'x86_64', 'compiler.version': '4.0', 'build_type': 'Release', 'compiler': 'clang'},
                      {'pack:shared': True}, {}, {}, None)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], "pack:shared", pure_c=False,
                                         build_types=["Debug"], cppstds=[None],
@@ -722,7 +722,7 @@ class GeneratorsTest(unittest.TestCase):
                     {'compiler': 'clang', 'build_type': 'Debug', 'compiler.libcxx': 'libc++', 'compiler.version': '4.0',
                      'arch': 'x86_64'},
                     {'pack:shared': True, "foo:bar": "qux", "pkg:shared": True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["4.0"], ["x86_64"], None, pure_c=False,
                                         build_types=["Debug"], cppstds=[None],
@@ -736,7 +736,7 @@ class GeneratorsTest(unittest.TestCase):
                          'compiler.version': '4.0',
                          'arch': 'x86_64'},
                         {"foo:bar": "qux", "pkg:shared": True}, {}, {}, ref)]
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_linux_clang_builds(["6.0"], ["x86_64"], "pack:shared", pure_c=False,
                                         build_types=["Debug", "Release"], cppstds=[None],
@@ -856,7 +856,7 @@ class GeneratorsTest(unittest.TestCase):
                      {'pack:shared': False, 'pack:foo': False, 'pack:bar': False}, {}, {}, ref)]
 
         b = [tuple(a) for a in builds]
-        self.assertEquals(b, expected)
+        self.assertEqual(b, expected)
 
     def test_visual_build_generator(self):
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
@@ -877,7 +877,7 @@ class GeneratorsTest(unittest.TestCase):
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '14', 'compiler.runtime': 'MDd'}, {}, {}, {}, ref),
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '14', 'compiler.runtime': 'MTd'}, {}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"], visual_toolsets=None,
@@ -898,7 +898,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'compiler.runtime': 'MDd', 'arch': 'x86_64', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"],
@@ -915,7 +915,7 @@ class GeneratorsTest(unittest.TestCase):
         ({'compiler.runtime': 'MDd', 'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '10', 'compiler.cppstd': '17'},
           {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MTd"],
@@ -930,7 +930,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'compiler': 'Visual Studio', 'compiler.runtime': 'MTd', 'compiler.version': '10', 'arch': 'x86', 'compiler.cppstd': '14', 'build_type': 'Debug'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10", "14"], archs=["x86"],
                                    visual_runtimes=["MDd", "MTd"],
@@ -952,7 +952,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '14',
               'compiler.cppstd': '14', 'compiler.runtime': 'MTd'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"],
@@ -978,7 +978,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"],
@@ -997,7 +997,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '20', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MTd"],
@@ -1013,7 +1013,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '20', 'build_type': 'Debug'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1037,7 +1037,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'Release', 'compiler': 'Visual Studio', 'compiler.version': '14',
               'compiler.cppstd': '14', 'compiler.runtime': 'MT'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"],
@@ -1063,7 +1063,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"],
@@ -1082,7 +1082,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '17', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MT"],
@@ -1099,7 +1099,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'Release'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1123,7 +1123,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'RelWithDebInfo', 'compiler': 'Visual Studio', 'compiler.version': '14',
               'compiler.runtime': 'MT'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"],
@@ -1149,7 +1149,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '14', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"],
@@ -1168,7 +1168,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '14', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MT"], visual_toolsets=None,
@@ -1183,7 +1183,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'RelWithDebInfo'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1206,7 +1206,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'MinSizeRel', 'compiler': 'Visual Studio', 'compiler.version': '14',
               'compiler.cppstd': '20', 'compiler.runtime': 'MT'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"], visual_toolsets=None,
@@ -1231,7 +1231,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MD"], visual_toolsets=None,
@@ -1249,7 +1249,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '14', 'compiler.version': '10'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MT"], visual_toolsets=None,
@@ -1264,7 +1264,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'MinSizeRel'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1288,7 +1288,7 @@ class GeneratorsTest(unittest.TestCase):
         ({'arch': 'x86', 'build_type': 'Release', 'compiler': 'Visual Studio', 'compiler.version': '14', 'compiler.cppstd': '14', 'compiler.runtime': 'MD'}, {}, {}, {}, ref),
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '14', 'compiler.cppstd': '14', 'compiler.runtime': 'MDd'}, {}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1312,7 +1312,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'Visual Studio', 'compiler.version': '14',
               'compiler.runtime': 'MTd'}, {"msvc:sdk": 10, "pkg:shared": True}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"], visual_toolsets=None,
@@ -1337,7 +1337,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '10', 'compiler.cppstd': '17'},
              {'libpng:shared': True, "pkg:shared": False, "pkg:foo": "bar"}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_visual_builds(visual_versions=["10"], archs=["x86", "x86_64"],
                                    visual_runtimes=["MDd"], visual_toolsets=None,
@@ -1355,7 +1355,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '10', 'compiler.cppstd': '14'},
              {'libpng:shared': True, "pkg:shared": False, "pkg:fPIC": False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
     def test_visual_toolsets(self):
 
@@ -1376,7 +1376,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '17', 'compiler.cppstd': '17', 'compiler.toolset': 'v140_xp'},
              {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         # Same with environment passing None in the parameter
         with environment_append({"CONAN_VISUAL_TOOLSETS": "17=v140;v140_xp,11=v140;v140_xp"}):
@@ -1388,7 +1388,7 @@ class GeneratorsTest(unittest.TestCase):
                                        build_types=["Debug", "Release", "RelWithDebInfo", "MinSizeRel"],
                                        cppstds=['17'],
                                        options={})
-            self.assertEquals([tuple(a) for a in builds], expected)
+            self.assertEqual([tuple(a) for a in builds], expected)
 
         # Invalid mapping generates builds without toolsets (visual 10 != visual 17)
         builds = get_visual_builds(visual_versions=["17"], archs=["x86"],
@@ -1408,7 +1408,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '17', 'compiler.version': '17'},
              {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
         builds = get_visual_builds(visual_versions=["10", "14"],
@@ -1529,7 +1529,7 @@ class GeneratorsTest(unittest.TestCase):
                      'build_type': 'Debug', 'compiler.runtime': 'MTd'},
                     {'pack:shared': False, 'pack:foo': False, 'pack:bar': False}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
     def test_msvc_build_generator(self):
         ref = ConanFileReference.loads("lib/1.0@conan/stable")
@@ -1549,7 +1549,7 @@ class GeneratorsTest(unittest.TestCase):
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193', 'compiler.runtime': 'static', 'compiler.runtime_type': 'Debug'}, {}, {}, {}, ref),
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193', 'compiler.runtime': 'dynamic', 'compiler.runtime_type': 'Debug'}, {}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["19.2"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1570,7 +1570,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '19.2', 'compiler.runtime': 'dynamic', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["19.0"], archs=["x86"],
                                  msvc_runtimes=["dynamic"],
@@ -1586,7 +1586,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '19.0', 'compiler.runtime': 'dynamic', 'compiler.runtime_type': 'Debug', 'compiler.cppstd': '17'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86"],
                                  msvc_runtimes=["static"],
@@ -1600,7 +1600,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193', 'compiler.runtime': 'static', 'compiler.runtime_type': 'Debug', 'compiler.cppstd': '14'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["192", "193"], archs=["x86"],
                                  msvc_runtimes=["dynamic", "static"],
@@ -1621,7 +1621,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193',
               'compiler.cppstd': '14', 'compiler.runtime': 'static', 'compiler.runtime_type': 'Debug'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1646,7 +1646,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '193', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1670,7 +1670,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '20', 'compiler.version': '193', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["static"],
@@ -1688,7 +1688,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '20', 'build_type': 'Debug', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1711,7 +1711,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'Release', 'compiler': 'msvc', 'compiler.version': '193',
               'compiler.cppstd': '14', 'compiler.runtime': 'static', 'compiler.runtime_type': 'Release'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1736,7 +1736,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '193', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1760,7 +1760,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '17', 'compiler.version': '193', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["193"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["static"],
@@ -1780,7 +1780,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'Release', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1803,7 +1803,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'RelWithDebInfo', 'compiler': 'msvc', 'compiler.version': '193',
               'compiler.runtime': 'static', 'compiler.runtime_type': 'Release'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1828,7 +1828,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '14', 'compiler.version': '191', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"],
@@ -1853,7 +1853,7 @@ class GeneratorsTest(unittest.TestCase):
              {'libpng:shared': True}, {}, {}, None)
         ]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["static"], msvc_runtime_types=["Release"],
@@ -1870,7 +1870,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'RelWithDebInfo', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1892,7 +1892,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86_64', 'build_type': 'MinSizeRel', 'compiler': 'msvc', 'compiler.version': '193',
               'compiler.cppstd': '20', 'compiler.runtime': 'static', 'compiler.runtime_type': 'Release'}, {}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"], msvc_runtime_types=["Release"],
@@ -1916,7 +1916,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '191', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"], msvc_runtime_types=["Release"],
@@ -1939,7 +1939,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.cppstd': '14', 'compiler.version': '191', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': True}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["static"], msvc_runtime_types=["Release"],
@@ -1956,7 +1956,7 @@ class GeneratorsTest(unittest.TestCase):
               'build_type': 'MinSizeRel', 'compiler.runtime_type': 'Release'},
              {'libpng:shared': False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -1979,7 +1979,7 @@ class GeneratorsTest(unittest.TestCase):
         ({'arch': 'x86', 'build_type': 'Release', 'compiler': 'msvc', 'compiler.version': '193', 'compiler.cppstd': '14', 'compiler.runtime': 'dynamic', 'compiler.runtime_type': 'Release'}, {}, {}, {}, ref),
         ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193', 'compiler.cppstd': '14', 'compiler.runtime': 'dynamic', 'compiler.runtime_type': 'Debug'}, {}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         #############
 
@@ -2002,7 +2002,7 @@ class GeneratorsTest(unittest.TestCase):
             ({'arch': 'x86', 'build_type': 'Debug', 'compiler': 'msvc', 'compiler.version': '193',
               'compiler.runtime': 'static', 'compiler.runtime_type': 'Debug'}, {"msvc:sdk": 10, "pkg:shared": True}, {}, {}, ref)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"], msvc_runtime_types=["Debug"],
@@ -2026,7 +2026,7 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '191', 'compiler.cppstd': '17', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': True, "pkg:shared": False, "pkg:foo": "bar"}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)
 
         builds = get_msvc_builds(msvc_versions=["191"], archs=["x86", "x86_64"],
                                  msvc_runtimes=["dynamic"], msvc_runtime_types=["Debug"],
@@ -2049,4 +2049,4 @@ class GeneratorsTest(unittest.TestCase):
               'compiler.version': '191', 'compiler.cppstd': '14', 'compiler.runtime_type': 'Debug'},
              {'libpng:shared': True, "pkg:shared": False, "pkg:fPIC": False}, {}, {}, None)]
 
-        self.assertEquals([tuple(a) for a in builds], expected)
+        self.assertEqual([tuple(a) for a in builds], expected)

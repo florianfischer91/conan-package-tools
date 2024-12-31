@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from cpt._compat import CONAN_HOME_ENV_VAR, mkdir_tmp, Conan, save, chdir, Version
+from cpt._compat import CONAN_HOME_ENV_VAR, CONAN_V2, mkdir_tmp, Conan, save, chdir, Version
 from conan import conan_version as client_version
 
 from cpt.test.utils.tools import TestBufferConanOutput
@@ -26,7 +26,7 @@ class BaseTest(unittest.TestCase):
         self.output = TestBufferConanOutput()
         self.api, _, _ = Conan.factory()
         self.api.create_app()
-        self.client_cache = self.api.app.cache
+        self.client_cache = self.api.cache if CONAN_V2 else self.api.app.cache
 
     def tearDown(self):
         os.chdir(self.old_folder)

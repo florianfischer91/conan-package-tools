@@ -1,7 +1,6 @@
 import unittest
 
-from cpt._compat import CONAN_V2
-from cpt.test.utils.tools import TestClient
+from cpt.test.utils.tools import TestClient, pos_args
 from cpt.test.test_client.tools import get_patched_multipackager
 
 
@@ -33,27 +32,15 @@ class Pkg(ConanFile):
 
         client = TestClient()
         client.save({"conanfile_base.py": base_conanfile})
-        if CONAN_V2:
-            client.run("export conanfile_base.py --name=pyreq_base --version=0.1 --user=user --channel=channel")
-        else:
-            client.run("export conanfile_base.py pyreq_base/0.1@user/channel")
+        client.run(f"export conanfile_base.py { pos_args('pyreq_base/0.1@user/channel') }")
 
         client.save({"conanfile.py": conanfile})
         mulitpackager = get_patched_multipackager(client, username="user",
                                                           channel="testing",
                                                           exclude_vcvars_precommand=True)
         mulitpackager.add({}, {})
-        if CONAN_V2:
-            from conan.test.utils.mocks import RedirectedTestOutput
-            from conan.test.utils.tools import redirect_output
-            output = RedirectedTestOutput()
-            with redirect_output(output):
-                mulitpackager.run()
-                output.seek(0)
-                out = output.read()
-        else:
-            mulitpackager.run()
-            out = client.out
+        mulitpackager.run()
+        out = mulitpackager.printer.printer.dump()
                 
         self.assertIn("pyreq/1.0.0@user/", out)
         self.assertIn(": 123,234", out)

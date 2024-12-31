@@ -1,5 +1,3 @@
-from cpt.test.utils.test_files import temp_folder
-
 from cpt.test.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
 from cpt.test.unit.utils import MockCIManager
@@ -47,10 +45,10 @@ class Pkg(ConanFile):
                                     skip_check_credentials=True)
             mp.add({}, {}, {})
             if CONAN_V2:
-                with self.assertRaisesRegexp(ConanException, "doesn't seem like a valid"):
+                with self.assertRaisesRegex(ConanException, "doesn't seem like a valid"):
                     mp.run()
             else:
-                with self.assertRaisesRegexp(ConanException, "Errors uploading some packages"):
+                with self.assertRaisesRegex(ConanException, "Errors uploading some packages"):
                     mp.run()
                 
             self.assertIn("Uploading packages for", self.output)
@@ -64,11 +62,11 @@ class Pkg(ConanFile):
                                 upload="https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
         mp.add({}, {}, {})
         mp.run()
-        self.assertIn("Upload skipped, credentials for remote 'my_upload_remote' "
+        self.assertIn("Upload skipped, credentials for remote 'upload_repo' "
                       "not available", self.output)
         self.assertNotIn("Uploading packages", self.output)
 
-    def test_no_credentials_only_url(self):
+    def test_no_credentials_wrong_userpass(self):
         self.save_conanfile(self.conanfile)
         with environment_append({"CONAN_PASSWORD": "mypass"}):
             mp = ConanMultiPackager(username="lasote", out=self.output.write,
@@ -139,4 +137,4 @@ class Pkg(ConanFile):
                 repo = self.api.remotes.get("upload_repo")
             else:
                 repo = self.api.get_remote_by_name("upload_repo")
-            self.assertEquals(repo.url, "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")
+            self.assertEqual(repo.url, "https://uilianr.jfrog.io/artifactory/api/conan/public-conan")

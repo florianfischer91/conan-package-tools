@@ -31,13 +31,13 @@ class CIManagerTest(unittest.TestCase):
             packager = ConanMultiPackager(username="dori", reference="lib/1.0")
             # Constructor skipped
             ret = packager.run()
-            self.assertEquals(ret, 99)
+            self.assertEqual(ret, 99)
 
     def test_bamboo_instance(self):
         with environment_append({"bamboo_buildNumber": "xx",
                                        "bamboo_planRepository_branch": "mybranch"}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_branch(), "mybranch")
             self.assertIsNotNone(manager.get_commit_msg())
 
     def test_travis_instance(self):
@@ -47,9 +47,9 @@ class CIManagerTest(unittest.TestCase):
                                        "TRAVIS_COMMIT": "506c89117650bb12252db26d35b8c2385411f175"
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
-            self.assertEquals(manager.get_commit_msg(), "msg")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_commit_msg(), "msg")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
 
     def test_appveyor_instance(self):
         with environment_append({"APPVEYOR": "1",
@@ -59,9 +59,9 @@ class CIManagerTest(unittest.TestCase):
                                        "APPVEYOR_REPO_COMMIT": "506c89117650bb12252db26d35b8c2385411f175",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
-            self.assertEquals(manager.get_commit_msg(), "msg more")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_commit_msg(), "msg more")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
 
         # Appveyor PULL REQUEST
         with environment_append({"APPVEYOR": "1",
@@ -73,8 +73,8 @@ class CIManagerTest(unittest.TestCase):
                                        }):
             manager = CIManager(self.printer)
             self.assertIsNone(manager.get_branch())
-            self.assertEquals(manager.get_commit_msg(), "msg more")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.get_commit_msg(), "msg more")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
 
         # Appveyor no extended
         with environment_append({"APPVEYOR": "1",
@@ -84,7 +84,7 @@ class CIManagerTest(unittest.TestCase):
                                        }):
             manager = CIManager(self.printer)
             self.assertIsNone(manager.get_branch())
-            self.assertEquals(manager.get_commit_msg(), "msg")
+            self.assertEqual(manager.get_commit_msg(), "msg")
 
     def test_circleci_instance(self):
         with environment_append({"CIRCLECI": "1",
@@ -92,10 +92,10 @@ class CIManagerTest(unittest.TestCase):
                                        "CIRCLE_SHA1": "506c89117650bb12252db26d35b8c2385411f175",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_branch(), "mybranch")
             self.assertIsNotNone(manager.get_commit_msg())
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
-            self.assertEquals(manager.is_pull_request(), False)
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.is_pull_request(), False)
 
         with environment_append({"CIRCLECI": "1",
                                        "CIRCLE_BRANCH": "pull/35",
@@ -105,8 +105,8 @@ class CIManagerTest(unittest.TestCase):
             manager = CIManager(self.printer)
             self.assertIsNone(manager.get_branch())
             self.assertIsNotNone(manager.get_commit_msg())
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
-            self.assertEquals(manager.is_pull_request(), True)
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.is_pull_request(), True)
 
     def test_gitlab_instance(self):
         with environment_append({"GITLAB_CI": "1",
@@ -115,9 +115,9 @@ class CIManagerTest(unittest.TestCase):
                                        "CI_COMMIT_SHA": "506c89117650bb12252db26d35b8c2385411f175",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_branch(), "mybranch")
             self.assertIsNotNone(manager.get_commit_msg())
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
 
     def test_jenkins_instance(self):
         with environment_append({"JENKINS_URL": "1",
@@ -125,9 +125,9 @@ class CIManagerTest(unittest.TestCase):
                                        "GIT_COMMIT": "506c89117650bb12252db26d35b8c2385411f175",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_branch(), "mybranch")
             self.assertIsNotNone(manager.get_commit_msg())
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
 
     def test_azure_instance(self):
         with environment_append({"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI": "https://dev.azure.com/",
@@ -137,10 +137,10 @@ class CIManagerTest(unittest.TestCase):
                                        "BUILD_REASON": "manual",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch")
-            self.assertEquals(manager.get_commit_msg(), "msg")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
-            self.assertEquals(manager.is_pull_request(), False)
+            self.assertEqual(manager.get_branch(), "mybranch")
+            self.assertEqual(manager.get_commit_msg(), "msg")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.is_pull_request(), False)
 
         with environment_append({"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI": "https://dev.azure.com/",
                                        "BUILD_SOURCEVERSIONMESSAGE": "msg",
@@ -149,10 +149,10 @@ class CIManagerTest(unittest.TestCase):
                                        "BUILD_REASON": "PullRequest",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "testing/version")
-            self.assertEquals(manager.get_commit_msg(), "msg")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
-            self.assertEquals(manager.is_pull_request(), True)
+            self.assertEqual(manager.get_branch(), "testing/version")
+            self.assertEqual(manager.get_commit_msg(), "msg")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.is_pull_request(), True)
 
         with environment_append({"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI": "https://dev.azure.com/",
                                        "BUILD_SOURCEVERSIONMESSAGE": "msg",
@@ -161,10 +161,10 @@ class CIManagerTest(unittest.TestCase):
                                        "BUILD_REASON": "IndividualCI",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "stable/version")
-            self.assertEquals(manager.get_commit_msg(), "msg")
-            self.assertEquals(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
-            self.assertEquals(manager.is_pull_request(), False)
+            self.assertEqual(manager.get_branch(), "stable/version")
+            self.assertEqual(manager.get_commit_msg(), "msg")
+            self.assertEqual(manager.get_commit_id(), "506c89117650bb12252db26d35b8c2385411f175")
+            self.assertEqual(manager.is_pull_request(), False)
 
     def test_shippable_instance(self):
         shippable_env = {   "SHIPPABLE": "true",
@@ -175,11 +175,11 @@ class CIManagerTest(unittest.TestCase):
                             "IS_PULL_REQUEST": "false"}
         with environment_append(shippable_env):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), shippable_env["BRANCH"])
-            self.assertEquals(manager.get_commit_msg(), shippable_env["COMMIT_MESSAGE"])
-            self.assertEquals(manager.get_commit_id(), shippable_env["COMMIT"])
-            self.assertEquals(manager.is_pull_request(), False)
-            self.assertEquals(manager.is_tag(), False)
+            self.assertEqual(manager.get_branch(), shippable_env["BRANCH"])
+            self.assertEqual(manager.get_commit_msg(), shippable_env["COMMIT_MESSAGE"])
+            self.assertEqual(manager.get_commit_id(), shippable_env["COMMIT"])
+            self.assertEqual(manager.is_pull_request(), False)
+            self.assertEqual(manager.is_tag(), False)
 
         shippable_env = {   "SHIPPABLE": "true",
                             "COMMIT_MESSAGE": "new tag",
@@ -189,11 +189,11 @@ class CIManagerTest(unittest.TestCase):
                             "IS_PULL_REQUEST": "true"}
         with environment_append(shippable_env):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), shippable_env["BRANCH"])
-            self.assertEquals(manager.get_commit_msg(), shippable_env["COMMIT_MESSAGE"])
-            self.assertEquals(manager.get_commit_id(), shippable_env["COMMIT"])
-            self.assertEquals(manager.is_pull_request(), True)
-            self.assertEquals(manager.is_tag(), True)
+            self.assertEqual(manager.get_branch(), shippable_env["BRANCH"])
+            self.assertEqual(manager.get_commit_msg(), shippable_env["COMMIT_MESSAGE"])
+            self.assertEqual(manager.get_commit_id(), shippable_env["COMMIT"])
+            self.assertEqual(manager.is_pull_request(), True)
+            self.assertEqual(manager.is_tag(), True)
 
     def test_github_actions_instance(self):
         gha_env = {"GITHUB_ACTIONS": "true",
@@ -203,9 +203,9 @@ class CIManagerTest(unittest.TestCase):
                    "GITHUB_EVENT_NAME": "push"}
         with environment_append(gha_env):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), gha_env["GITHUB_REF"])
-            self.assertEquals(manager.get_commit_id(), gha_env["GITHUB_SHA"])
-            self.assertEquals(manager.is_pull_request(), False)
+            self.assertEqual(manager.get_branch(), gha_env["GITHUB_REF"])
+            self.assertEqual(manager.get_commit_id(), gha_env["GITHUB_SHA"])
+            self.assertEqual(manager.is_pull_request(), False)
 
         gha_env = {"GITHUB_ACTIONS": "true",
                    "GITHUB_SHA": "98e984eacf4e3dfea431c8850c8c181a08e8cf3d",
@@ -214,16 +214,16 @@ class CIManagerTest(unittest.TestCase):
                    "GITHUB_EVENT_NAME": "pull_request"}
         with environment_append(gha_env):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), gha_env["GITHUB_BASE_REF"])
-            self.assertEquals(manager.get_commit_id(), gha_env["GITHUB_SHA"])
-            self.assertEquals(manager.is_pull_request(), True)
+            self.assertEqual(manager.get_branch(), gha_env["GITHUB_BASE_REF"])
+            self.assertEqual(manager.get_commit_id(), gha_env["GITHUB_SHA"])
+            self.assertEqual(manager.is_pull_request(), True)
 
         gha_env = {"GITHUB_ACTIONS": "true",
                    "GITHUB_REF": "refs/heads/testing",
                    "GITHUB_EVENT_NAME": "push"}
         with environment_append(gha_env):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "testing")
+            self.assertEqual(manager.get_branch(), "testing")
 
     def test_build_policy(self):
         # Travis
@@ -231,16 +231,16 @@ class CIManagerTest(unittest.TestCase):
                                        "TRAVIS_COMMIT_MESSAGE":
                                            "This is a great commit [build=outdated] End."}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_commit_build_policy(), ["outdated"])
-            self.assertEquals(manager.get_commit_msg(), "This is a great commit "
+            self.assertEqual(manager.get_commit_build_policy(), ["outdated"])
+            self.assertEqual(manager.get_commit_msg(), "This is a great commit "
                                                         "[build=outdated] End.")
 
         with environment_append({"TRAVIS": "1",
                                        "TRAVIS_COMMIT_MESSAGE":
                                            "This is a great commit [build=all] End."}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_commit_build_policy(), ["all"])
-            self.assertEquals(manager.get_commit_msg(), "This is a great commit "
+            self.assertEqual(manager.get_commit_build_policy(), ["all"])
+            self.assertEqual(manager.get_commit_msg(), "This is a great commit "
                                                         "[build=all] End.")
         # Appveyor
         with environment_append({"APPVEYOR": "1",
@@ -251,7 +251,7 @@ class CIManagerTest(unittest.TestCase):
                                        "APPVEYOR_REPO_BRANCH": "mybranch",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_commit_build_policy(), ["missing"])
+            self.assertEqual(manager.get_commit_build_policy(), ["missing"])
 
         # Complex messages
         m = "double travis pages again due to timeout, travis taking longer " \
@@ -259,7 +259,7 @@ class CIManagerTest(unittest.TestCase):
         with environment_append({"TRAVIS": "1",
                                        "TRAVIS_COMMIT_MESSAGE": m}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_commit_build_policy(), ["missing"])
+            self.assertEqual(manager.get_commit_build_policy(), ["missing"])
 
         # multiple build policies
         with environment_append({"APPVEYOR": "1",
@@ -270,7 +270,7 @@ class CIManagerTest(unittest.TestCase):
                                        "APPVEYOR_REPO_BRANCH": "mybranch",
                                        }):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_commit_build_policy(), ["missing", "pattern"])
+            self.assertEqual(manager.get_commit_build_policy(), ["missing", "pattern"])
 
     def test_bamboo_env_vars(self):
         self.assertIsNone(os.getenv('CONAN_LOGIN_USERNAME'))
@@ -281,10 +281,10 @@ class CIManagerTest(unittest.TestCase):
                                        "bamboo_CONAN_USER_VAR": "bamboo",
                                        "CONAN_USER_VAR": "foobar"}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch") # checks that manager is Bamboo
+            self.assertEqual(manager.get_branch(), "mybranch") # checks that manager is Bamboo
 
-            self.assertEquals(os.getenv('CONAN_LOGIN_USERNAME'), "bamboo")
-            self.assertEquals(os.getenv('CONAN_USER_VAR'), "foobar")
+            self.assertEqual(os.getenv('CONAN_LOGIN_USERNAME'), "bamboo")
+            self.assertEqual(os.getenv('CONAN_USER_VAR'), "foobar")
 
         with environment_append({"bamboo_buildNumber": "xx",
                                        "bamboo_planRepository_branch": "mybranch",
@@ -292,7 +292,7 @@ class CIManagerTest(unittest.TestCase):
                                        "BAMBOO_CONAN_USER_VAR": "bamboo",
                                        "CONAN_USER_VAR": "foobar"}):
             manager = CIManager(self.printer)
-            self.assertEquals(manager.get_branch(), "mybranch") # checks that manager is Bamboo
+            self.assertEqual(manager.get_branch(), "mybranch") # checks that manager is Bamboo
 
-            self.assertEquals(os.getenv('CONAN_LOGIN_USERNAME'), "bamboo")
-            self.assertEquals(os.getenv('CONAN_USER_VAR'), "foobar")
+            self.assertEqual(os.getenv('CONAN_LOGIN_USERNAME'), "bamboo")
+            self.assertEqual(os.getenv('CONAN_USER_VAR'), "foobar")

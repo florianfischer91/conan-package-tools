@@ -5,7 +5,7 @@ import textwrap
 
 from conans.model.manifest import FileTreeManifest
 
-from cpt.test.utils.tools import TestClient, TestServer
+from cpt.test.utils.tools import TestClient, TestServer, pos_args
 from cpt.test.unit.utils import MockCIManager
 
 from cpt.test.test_client.tools import get_patched_multipackager
@@ -35,29 +35,19 @@ class Pkg(ConanFile):
     def test_dont_upload_non_built_packages(self):
 
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs=["user", "password"])
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user"}):
             mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
-            if CONAN_V2:
-                self.assertRegexpMatches(out, r"Uploading package 'lib/1.0@user/testing#.*:55c609fe8808aa5308134cb5989d23d3caffccf2")
-                self.assertRegexpMatches(out, r"Uploading package 'lib/1.0@user/testing#.*:1744785cb24e3bdca70e27041dc5abd20476f947")
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/testing#.*:55c609fe8808aa5308134cb5989d23d3caffccf2")
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/testing#.*:1744785cb24e3bdca70e27041dc5abd20476f947")
             else:
                 self.assertIn("Uploading package 1/2", out)
                 self.assertIn("Uploading package 2/2", out)
@@ -67,16 +57,8 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn("Skipping upload for 55c609fe8808aa5308134cb5989d23d3caffccf2", out)
@@ -90,21 +72,14 @@ class Pkg(ConanFile):
             mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertNotIn("Skipping upload for 55c609fe8808aa5308134cb5989d23d3caffccf2", out)
                 self.assertNotIn("Skipping upload for 1744785cb24e3bdca70e27041dc5abd20476f947", out)
-                self.assertRegexpMatches(out, r"Uploading package 'lib/1.0@user/testing#.*:55c609fe8808aa5308134cb5989d23d3caffccf2")
-                self.assertRegexpMatches(out, r"Uploading package 'lib/1.0@user/testing#.*:1744785cb24e3bdca70e27041dc5abd20476f947")
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/testing#.*:55c609fe8808aa5308134cb5989d23d3caffccf2")
+                self.assertRegex(out, r"Uploading package 'lib/1.0@user/testing#.*:1744785cb24e3bdca70e27041dc5abd20476f947")
             else:
                 self.assertNotIn("Skipping upload for 5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9", out)
                 self.assertNotIn("Skipping upload for 2a623e3082a38f90cd2c3d12081161412de331b0", out)
@@ -114,10 +89,7 @@ class Pkg(ConanFile):
 
     def test_upload_when_tag_is_false(self):
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
 
         zip_path = os.path.join(tc.current_folder, 'config.zip')
@@ -130,20 +102,11 @@ class Pkg(ConanFile):
                                  "TRAVIS": "1"}):
 
             
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
-                    mp.add_common_builds(shared_option_name=False)
-                    mp.run()
-                    out = str(output)
-            else:
-                mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
-                mp.add_common_builds(shared_option_name=False)
-                mp.run()
-                out = str(tc.out)
+            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mp.add_common_builds(shared_option_name=False)
+            mp.run()
+            out = mp.printer.printer.dump()
+            
             if CONAN_V2:
                 self.assertNotIn("Redefined channel by branch tag", out)
                 self.assertNotIn("Uploading package 'lib/1.0@user/stable#", out)
@@ -157,10 +120,7 @@ class Pkg(ConanFile):
 
     def test_upload_when_tag_is_true(self):
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
 
         zip_path = os.path.join(tc.current_folder, 'config.zip')
@@ -173,20 +133,11 @@ class Pkg(ConanFile):
                                  "TRAVIS": "1", "TRAVIS_TAG": "0.1"}):
 
             
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
-                    mp.add_common_builds(shared_option_name=False)
-                    mp.run()
-                    out = str(output)
-            else:
-                mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
-                mp.add_common_builds(shared_option_name=False)
-                mp.run()
-                out = str(tc.out)
+            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mp.add_common_builds(shared_option_name=False)
+            mp.run()
+            out = mp.printer.printer.dump()
+            
             if CONAN_V2:
                 self.assertNotIn("Skipping upload, not tag branch", out)
                 self.assertIn("Redefined channel by branch tag", out)
@@ -199,13 +150,8 @@ class Pkg(ConanFile):
                 self.assertIn("Uploading package 1/1: 5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 to 'default'", out)
 
     def test_upload_only_recipe_env_var(self):
-        ts = TestServer(users={"user": "password"},
-                                #   write_permissions=[("lib/1.0@user/mychannel", "user")],
-                        )
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts},  inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        ts = TestServer(users={"user": "password"})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
 
         # Upload only the recipe
@@ -216,16 +162,8 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn(" Uploading packages for 'lib/1.0@user/mychannel#", out)
@@ -248,16 +186,8 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn(" Uploading packages for 'lib/1.0@user/mychannel#", out)
@@ -273,10 +203,7 @@ class Pkg(ConanFile):
 
     def test_upload_only_recipe_params(self):
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
 
         # Upload only the recipe
@@ -288,16 +215,8 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn(" Uploading packages for 'lib/1.0@user/mychannel#", out)
@@ -321,16 +240,9 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertIn(" Uploading packages for 'lib/1.0@user/mychannel#", out)
                 # self.assertNotIn("Recipe is up to date, upload skipped", out)
@@ -347,10 +259,7 @@ class Pkg(ConanFile):
 
     def test_upload_package_revisions(self):
         ts = TestServer(users={"user": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user",
@@ -359,16 +268,9 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {"shared": True})
             mulitpackager.add({}, {"shared": False})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertNotIn("Skipping upload for 55c609fe8808aa5308134cb5989d23d3caffccf2", out)
                 self.assertNotIn("Skipping upload for 1744785cb24e3bdca70e27041dc5abd20476f947", out)
@@ -384,10 +286,7 @@ class Pkg(ConanFile):
     def test_upload_partial_reference(self):
         ts = TestServer(users={"user": "password"},
                         write_permissions=[("lib/1.0@*/*", "user")])
-        if CONAN_V2:
-            tc = TestClient(servers={"default": ts}, inputs={"default": [("user", "password")]})
-        else:
-            tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
+        tc = TestClient(servers={"default": ts}, users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
 
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
@@ -396,16 +295,9 @@ class Pkg(ConanFile):
 
             mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mp.add_common_builds(shared_option_name=False)
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mp.run()
-                    out = str(output)
-            else:
-                mp.run()
-                out = str(tc.out)
+            mp.run()
+            out = mp.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertIn("Uploading packages for 'lib/1.0#", out)
             else:
@@ -422,13 +314,10 @@ class Pkg(ConanFile):
                         self.output.warning("Mens sana in corpore sano")
         """)
         ts = TestServer(users={"foo": "password"})
-        if CONAN_V2:
-            tc = TestClient(servers={"foo_server": ts}, inputs=["foo", "password"])
-        else:
-            tc = TestClient(servers={"foo_server": ts}, users={"foo_server": [("foo", "password")]})
+        tc = TestClient(servers={"foo_server": ts}, users={"foo_server": [("foo", "password")]})
 
         tc.save({"conanfile.py": conanfile})
-        tc.run(f"create . {'--name=lib --version=1.0 --user=foo --channel=stable' if CONAN_V2 else 'lib/1.0@foo/stable'}")
+        tc.run(f"create . { pos_args('lib/1.0@foo/stable') }")
         tc.run(f"upload lib/1.0@foo/stable {'' if CONAN_V2 else '--all'} -r foo_server")
         if CONAN_V2:
             from conans.model.recipe_ref import RecipeReference
@@ -445,7 +334,7 @@ class Pkg(ConanFile):
         manifest.save(path)
 
         tc.save({"conanfile.py": conanfile.replace("warning", "info")})
-        tc.run(f"create . {'--name=lib --version=1.0 --user=foo --channel=stable' if CONAN_V2 else 'lib/1.0@foo/stable'}")
+        tc.run(f"create . { pos_args('lib/1.0@foo/stable')}")
 
         # Force is True, package must be uploaded all times
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "foo",
@@ -454,16 +343,8 @@ class Pkg(ConanFile):
             mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
             if CONAN_V2:
                 self.assertIn("Uploading packages for 'lib/1.0@foo/stable#", out)
                 # TODO how to check that in conan2 ?
@@ -481,16 +362,10 @@ class Pkg(ConanFile):
                                                       upload_force=True)
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertIn("Uploading packages for 'lib/1.0@foo/stable#", out)
                 # TODO how to handle in conan2?
@@ -509,16 +384,10 @@ class Pkg(ConanFile):
                                                       upload_force=False)
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with tc.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(tc.out)
+
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
+
             if CONAN_V2:
                 self.assertIn("Uploading packages for 'lib/1.0@foo/stable#", out)
                 # TODO how to handle in conan2?
@@ -568,16 +437,12 @@ class Pkg(ConanFile):
                                   write_permissions=[("bar/*@foo/stable", "user"),
                                                      ("foo/*@bar/testing", "user"),
                                                      ("foobar/2.0@user/testing", "user")])
-        if CONAN_V2:
-            self._client = TestClient(servers={"default": self._server},
-                                 inputs=["user", "password"])
-        else:
-            self._client = TestClient(servers={"default": self._server},
+        self._client = TestClient(servers={"default": self._server},
                                  users={"default": [("user", "password")]})
         self._client.save({"conanfile_bar.py": self.conanfile_bar})
-        self._client.run(f"export conanfile_bar.py {'--user=foo --channel=stable' if CONAN_V2 else 'foo/stable'}")
+        self._client.run(f"export conanfile_bar.py { pos_args('foo/stable') }")
         self._client.save({"conanfile_foo.py": self.conanfile_foo})
-        self._client.run(f"export conanfile_foo.py {'--user=bar --channel=testing' if CONAN_V2 else 'bar/testing'}")
+        self._client.run(f"export conanfile_foo.py { pos_args('bar/testing') }")
         self._client.save({"conanfile.py": self.conanfile})
 
     def test_upload_all_dependencies(self):
@@ -592,16 +457,8 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with self._client.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(self._client.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn("Uploading package 'foobar/2.0@user/testing#", out)
@@ -647,16 +504,8 @@ class Pkg(ConanFile):
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with self._client.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(self._client.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn("Uploading package 'foobar/2.0@user/testing#", out)
@@ -693,16 +542,8 @@ class Pkg(ConanFile):
                                                       ci_manager=self._ci_manager)
 
             mulitpackager.add({}, {})
-            if CONAN_V2:
-                from conan.test.utils.mocks import RedirectedTestOutput
-                from conan.test.utils.tools import redirect_output
-                output = RedirectedTestOutput()
-                with self._client.mocked_servers(), redirect_output(output):
-                    mulitpackager.run()
-                    out = str(output)
-            else:
-                mulitpackager.run()
-                out = str(self._client.out)
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
             if CONAN_V2:
                 self.assertIn("Uploading package 'foobar/2.0@user/testing#", out)

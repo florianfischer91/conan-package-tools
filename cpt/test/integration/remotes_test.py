@@ -1,4 +1,4 @@
-from cpt._compat import CONAN_V2, list_remotes, remove_remote, add_remote
+from cpt._compat import list_remotes, remove_remote, add_remote
 from cpt.printer import Printer
 from cpt.remotes import RemotesManager
 from cpt.test.integration.base import BaseTest
@@ -19,11 +19,11 @@ class RemotesTest(BaseTest):
 
         manager.add_remotes_to_conan()
 
-        self.assertEquals(len(list_remotes(self.api)), 1)
+        self.assertEqual(len(list_remotes(self.api)), 1)
 
         manager.add_remotes_to_conan()
 
-        self.assertEquals(len(list_remotes(self.api)), 1)
+        self.assertEqual(len(list_remotes(self.api)), 1)
 
     def test_duplicated_remotes_with_same_url(self):
         remove_remote(self.api, "conancenter")
@@ -36,4 +36,4 @@ class RemotesTest(BaseTest):
         self.assertIsNotNone(manager._get_remote_by_name(remotes, "upload_repo"))
 
         manager.add_remotes_to_conan()
-        self.assertEquals(len(list_remotes(self.api)), 1)
+        self.assertEqual(len(list_remotes(self.api)), 1)

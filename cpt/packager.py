@@ -21,7 +21,7 @@ from cpt.tools import split_colon_env
 from cpt.uploader import Uploader
 from cpt.config import ConfigManager
 
-from cpt._compat import environment_append, Conan, ConanRunner, ConanFileReference, is_windows, which, load_remotes, Version, use_pattern
+from cpt._compat import CONAN_V2, environment_append, Conan, ConanRunner, ConanFileReference, is_windows, which, load_remotes, Version, use_pattern
 
 def load_cf_class(path, conan_api):
     client_version = get_client_version()
@@ -471,7 +471,7 @@ class ConanMultiPackager(object):
         header_only_option = None
         if conanfile:
             if hasattr(conanfile, "options") and conanfile.options and "header_only" in conanfile.options:
-                header_only_option = "%s:header_only" % reference.name
+                header_only_option = "%s%s:header_only" % (reference.name, "/*" if use_pattern else "")
 
         if shared_option_name is None:
             if conanfile:
@@ -481,12 +481,22 @@ class ConanMultiPackager(object):
         # filter only valid options
         raw_options_for_building = [opt[opt.find(":") + 1:] for opt in build_all_options_values]
         for raw_option in reversed(raw_options_for_building):
-            if hasattr(conanfile, "options") and conanfile.options and \
-               not isinstance(conanfile.options.get(raw_option), list):
-                raw_options_for_building.remove(raw_option)
+            if CONAN_V2:
+                from conans.model.options import _PackageOption
+                if hasattr(conanfile, "options") and conanfile.options and \
+                    not isinstance(conanfile.options.get_safe(raw_option), _PackageOption) \
+                    and not len(conanfile.options.get_safe(raw_option).possible_values or [])<=1:
+                    raw_options_for_building.remove(raw_option)
+            else:
+                if hasattr(conanfile, "options") and conanfile.options and \
+                    not isinstance(conanfile.options.get(raw_option), list):
+                    raw_options_for_building.remove(raw_option)
         if raw_options_for_building and conanfile:
             # get option and its values
-            cloned_options = copy.copy(conanfile.options)
+            if CONAN_V2:
+                cloned_options = copy.copy(conanfile.options.possible_values)
+            else:
+                cloned_options = copy.copy(conanfile.options)
             for key, value in conanfile.options.items():
                 if key == "shared" and shared_option_name:
                     continue

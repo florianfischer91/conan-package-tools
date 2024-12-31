@@ -16,10 +16,7 @@ class GlobalConfTest(unittest.TestCase):
         """)
 
     def test_environment_variable(self):
-        if CONAN_V2:
-            tc = TestClient(inputs=["user", "password"])
-        else:
-            tc = TestClient(users={"default": [("user", "password")]})
+        tc = TestClient(users={"default": [("user", "password")]})
         tc.save({"conanfile.py": self.conanfile})
         global_conf = ["tools.system.package_manager:mode=install", "tools.system.package_manager:sudo=True"]
 

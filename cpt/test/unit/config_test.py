@@ -29,7 +29,7 @@ class RemotesTestRealApi(BaseTest):
         else:
             profiles = self.api.profile_list()
         
-        self.assertEquals(len(profiles), 0)
+        self.assertEqual(len(profiles), 0)
 
         manager.install("https://github.com/bincrafters/bincrafters-config.git", "-b main")
         if CONAN_V2:
@@ -45,7 +45,7 @@ class RemotesTestRealApi(BaseTest):
             profiles = self.api.profiles.list()
         else:
             profiles = self.api.profile_list()
-        self.assertEquals(len(profiles), 0)
+        self.assertEqual(len(profiles), 0)
 
         try:
             manager.install("https://github.com/")
