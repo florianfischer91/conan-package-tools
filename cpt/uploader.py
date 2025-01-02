@@ -49,19 +49,16 @@ class Uploader(object):
                                       force=self._force,
                                       retry=int(self._upload_retry))
             elif client_version > Version("2"):
-                all_packages = package_id != None
-                # policy = UPLOAD_POLICY_FORCE if self._force else None
+                all_packages = package_id is not None
                 remote = self.conan_api.remotes.get(remote_name)
-                from conan.api.model import ListPattern, MultiPackagesList
+                from conan.api.model import ListPattern
 
                 ref_pattern = ListPattern(reference, package_id=package_id or "*", only_recipe= not all_packages)
                 package_list = self.conan_api.list.select(ref_pattern)
                 self.conan_api.upload.upload_full(package_list,remote=remote,force=self._force, enabled_remotes=self.conan_api.remotes.list())
-                # else:
-                #     self.conan_api.upload.upload(str(reference),remote=remote)
 
             else:
-                all_packages = package_id != None
+                all_packages = package_id is not None
                 policy = UPLOAD_POLICY_FORCE if self._force else None
                 self.conan_api.upload(str(reference),
                                       all_packages=all_packages,

@@ -19,7 +19,7 @@ if CONAN_V2:
     from conan.internal.api.uploader import UPLOAD_POLICY_FORCE
     from conan.api.conan_api import ConanAPI
     from conans.util.runners import conan_run
-    from conan.tools.files import load as _load, save as _save, replace_in_file
+    from conan.tools.files import load as _load, save as _save
     from conans.model.recipe_ref import RecipeReference
     from conans.util.files import chdir
     import tempfile
@@ -30,6 +30,9 @@ if CONAN_V2:
     from conans.model.package_ref import PkgReference as PackageReference
     from conan.internal.conan_app import ConanApp
     from conan.api.model import Remote
+    import platform
+    is_linux = platform.system() == "Linux"
+
 
     from contextlib import contextmanager
     import os
@@ -59,6 +62,10 @@ if CONAN_V2:
             os.environ.update(old_env)
 
 
+    def replace_in_file(path, new, old):
+        content = load(path)
+        content = content.replace(new, old)
+        save(path, content)
 
     class ConanFileReference(RecipeReference):
 
@@ -102,6 +109,15 @@ if CONAN_V2:
             
             app = ConanApp(ConanAPI(self.cache_folder))
             return app.loader.load_named(path, a1, a2, a3, a4)
+        
+        def create(self, cmd):
+            from conan.cli.commands.create import create
+            from argparse import ArgumentParser
+           
+            return create.method(self, ArgumentParser(), cmd)
+        
+        def create_profile(self, default_profile_name, detect):
+            create_default_profile(self, default_profile_name)
             
 
     def _load_profile(profile_abs_path, conan_api, client_cache):
@@ -212,6 +228,11 @@ else:
     from conans.util.env_reader import get_env
     from conans.model.ref import PackageReference
     from conans.client.api.conan_api import ConanAPIV2 as ConanAPI
+    from conans.tools import os_info
+    
+    is_linux = os_info.is_linux
+
+
 
     def add_remote(conan_api: ConanAPI, name: str, url: str, verify_ssl: bool, insert: int=None):
         conan_api.remote_add(name, url, verify_ssl=verify_ssl, insert=insert)
@@ -248,6 +269,13 @@ include(%s)
 %s
 """
 
+def create_default_profile(conan_api: ConanAPI, profile_name) -> str:
+    # create default profile if it doesn't already exist, in v1 this was handled by conan
+    profile_pathname = conan_api.profiles.get_path(profile_name, os.getcwd(), exists=False)
+    if not os.path.exists(profile_pathname):
+        detected_profile = conan_api.profiles.detect()
+        contents = detected_profile.dumps()
+        save(profile_pathname, contents)
 
 def load_remotes(conan_api):
     if CONAN_V2:
@@ -255,15 +283,9 @@ def load_remotes(conan_api):
     else:
         return conan_api.app.cache.registry.load_remotes()
 
-def get_default_profile_path(conan_api):
+def get_default_profile_path(conan_api: ConanAPI):
     if CONAN_V2:
-        # create default profile if it doesn't already exist, in v1 this was handled by conan
-        profile_pathname = conan_api.profiles.get_path("default", os.getcwd(), exists=False)
-        if not os.path.exists(profile_pathname):
-            detected_profile = conan_api.profiles.detect()
-            contents = detected_profile.dumps()
-            save(profile_pathname, contents)
-        return profile_pathname
+        return conan_api.profiles.get_path("default", os.getcwd(), exists=False)
     else:
         return conan_api.app.cache.default_profile_path
     
@@ -283,25 +305,20 @@ def get_global_conf(conan_api):
     
 def create_package(self: 'CreateRunner', name, version, channel, user, profile_build):
     if CONAN_V2:
-        from conan.cli.commands.create import create
-        from argparse import ArgumentParser
-
-        print(self._profile_abs_path)
-        print(profile_build)
         cmd = [
             self._conanfile, "--version", str(version), "--name", name,
             "--user", user, "--channel", channel,
-            "-l", self._lockfile,
             "-pr", self._profile_abs_path
         ]
         cmd.extend(["-tf", self._test_folder or ""])
+        cmd.extend(["-l", self._lockfile or ""])
         if self._update_dependencies:
             cmd.append("-u")
         if self._build_policy:
             for policy in self._build_policy:
                 cmd.extend(["-b", policy])
 
-        self._results = create.method(self._conan_api, ArgumentParser(), cmd)["graph"].serialize()
+        self._results = self._conan_api.create(cmd=cmd)["graph"].serialize()
     else:
         self._results = self._conan_api.create(self._conanfile, name=name, version=version,
                                 user=user, channel=channel,

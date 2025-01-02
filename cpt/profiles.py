@@ -14,13 +14,6 @@ def get_profiles(client_cache, build_config, base_profile_name=None, is_build_pr
             # ugly, client_cache is PkgCache, maybe we have to think about to refactor it so that
             # client_cache is CacheAPI object?
             default_profile_path = os.path.join(client_cache.store,"..", "profiles")
-            default_profile_name = os.path.join(default_profile_path, "default")
-            # create the default profile if it doesn't already exist
-            if not os.path.exists(default_profile_name):
-                from conan.api.subapi.profiles import ProfilesAPI
-                detected_profile = ProfilesAPI.detect()
-                contents = detected_profile.dumps()
-                save(default_profile_name, contents)
             base_profile_path = os.path.join(default_profile_path, base_profile_name)
         else:
             base_profile_path = os.path.join(client_cache.profiles_path, base_profile_name)

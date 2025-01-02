@@ -7,11 +7,12 @@ from collections import defaultdict
 
 from cpt.builds_generator import BuildConf
 from cpt.packager import ConanMultiPackager
-from conans import tools
 from cpt.test.utils.tools import TestBufferConanOutput
-from conans.model.ref import ConanFileReference
-from cpt.test.unit.utils import MockConanAPI, MockRunner, MockCIManager
+from cpt._compat import CONAN_V2, ConanFileReference, environment_append, which
+from cpt.test.unit.utils import MockConanAPI, MockRunner, MockCIManager, cmd_to_dict
 
+if CONAN_V2:
+    from conan.api.model import Remote
 
 def platform_mock_for(so):
     class PlatformInfoMock(object):
@@ -38,8 +39,8 @@ class AppTest(unittest.TestCase):
                 del os.environ[provider]
 
     def _add_build(self, number, compiler=None, version=None):
-        self.packager.add({"os": "os%d" % number, "compiler": compiler or "compiler%d" % number,
-                           "compiler.version": version or "4.3"},
+        self.packager.add({"os": "Linux", "compiler": compiler or "compiler%d" % number,
+                           "compiler.version": version or "4.9"},
                           {"option%d" % number: "value%d" % number,
                            "option%d" % number: "value%d" % number})
 
@@ -101,13 +102,22 @@ class AppTest(unittest.TestCase):
                           {"*": ["myreference/1.0@lasote/testing"]})
         self.packager.run_builds(1, 1)
         profile = self.conan_api.get_profile_from_call_index(1)
-        self.assertEquals(profile.settings["os"], "Windows")
-        self.assertEquals(profile.settings["compiler"], "gcc")
-        self.assertEquals(profile.options.as_list(), [("option1", "One")])
-        self.assertEquals(profile.env_values.data[None]["VAR_1"], "ONE")
-        self.assertEquals(profile.env_values.data[None]["VAR_2"], "TWO")
-        self.assertEquals(profile.build_requires["*"],
-                          [ConanFileReference.loads("myreference/1.0@lasote/testing")])
+        self.assertEqual(profile.settings["os"], "Windows")
+        self.assertEqual(profile.settings["compiler"], "gcc")
+        if CONAN_V2:
+            self.assertEqual(profile.options.serialize(), {"option1": "One"})
+            self.assertEqual(profile.buildenv.dumps(), "VAR_1=ONE\nVAR_2=TWO\n")
+            requires = profile.tool_requires["*"]
+            self.assertEqual(profile.tool_requires["*"],
+                            [ConanFileReference.loads("myreference/1.0@lasote/testing")])
+        else:
+            self.assertEqual(profile.options.as_list(), [("option1", "One")])
+            self.assertEqual(profile.env_values.data[None]["VAR_1"], "ONE")
+            self.assertEqual(profile.env_values.data[None]["VAR_2"], "TWO")
+            requires = profile.build_requires["*"]
+
+        self.assertEqual(requires,
+                        [ConanFileReference.loads("myreference/1.0@lasote/testing")])
 
     def test_profile_environ(self):
         self.packager.add({"os": "Windows", "compiler": "gcc"},
@@ -115,16 +125,19 @@ class AppTest(unittest.TestCase):
                           {"VAR_1": "ONE",
                            "VAR_2": "TWO"},
                           {"*": ["myreference/1.0@lasote/testing"]})
-        with tools.environment_append({"CONAN_BUILD_REQUIRES": "br1/1.0@conan/testing"}):
+        with environment_append({"CONAN_BUILD_REQUIRES": "br1/1.0@conan/testing"}):
             self.packager.run_builds(1, 1)
             profile = self.conan_api.get_profile_from_call_index(1)
-            self.assertEquals(profile.build_requires["*"],
-                              [ConanFileReference.loads("myreference/1.0@lasote/testing"),
-                               ConanFileReference.loads("br1/1.0@conan/testing")])
+            
+            requires = profile.tool_requires["*"] if CONAN_V2 else profile.build_requires["*"]
+                              
+            self.assertEqual(requires,
+                                [ConanFileReference.loads("myreference/1.0@lasote/testing"),
+                                ConanFileReference.loads("br1/1.0@conan/testing")])
 
     def test_pages(self):
         for number in range(10):
-            self._add_build(number)
+            self._add_build(number, "gcc")
 
         # 10 pages, 1 per build
         self.packager.run_builds(1, 10)
@@ -192,7 +205,7 @@ class AppTest(unittest.TestCase):
         self.assertNotIn("docker pull conanio/gcc6-i386", self.runner.calls[0])
 
         self.runner.reset()
-        with tools.environment_append({"CONAN_DOCKER_32_IMAGES": "1"}):
+        with environment_append({"CONAN_DOCKER_32_IMAGES": "1"}):
             packager = ConanMultiPackager(username="lasote",
                                           channel="mychannel",
                                           runner=self.runner,
@@ -238,16 +251,16 @@ class AppTest(unittest.TestCase):
         self.assertIn('docker run ', self.runner.calls[1])
         self.assertNotIn('sudo pip', self.runner.calls[1])
         self.assertIn('pip install', self.runner.calls[1])
-        self.assertIn('os=os1', self.runner.calls[4])
+        self.assertIn('option1', self.runner.calls[4])
         self.packager.run_builds(1, 2)
         self.assertIn("docker pull conanio/gcc43", self.runner.calls[0])
 
         # Next build from 4.3 is cached, not pulls are performed
-        self.assertIn('os=os3', self.runner.calls[5])
+        self.assertIn('option3', self.runner.calls[5])
 
         for the_bool in ["True", "False"]:
             self.runner.reset()
-            with tools.environment_append({"CONAN_DOCKER_USE_SUDO": the_bool}):
+            with environment_append({"CONAN_DOCKER_USE_SUDO": the_bool}):
                 self.packager = ConanMultiPackager(username="lasote",
                                                    channel="mychannel",
                                                    runner=self.runner,
@@ -264,7 +277,7 @@ class AppTest(unittest.TestCase):
                     self.assertNotIn("sudo -E docker run", self.runner.calls[-1])
                     self.assertIn("docker run", self.runner.calls[-1])
             self.runner.reset()
-            with tools.environment_append({"CONAN_PIP_USE_SUDO": the_bool}):
+            with environment_append({"CONAN_PIP_USE_SUDO": the_bool}):
                 self.packager = ConanMultiPackager(username="lasote",
                                                    channel="mychannel",
                                                    runner=self.runner,
@@ -298,10 +311,10 @@ class AppTest(unittest.TestCase):
         self.packager.run_builds(1, 2)
         self.assertIn("docker pull conanio/clang38", self.runner.calls[0])
         self.assertIn('docker run ', self.runner.calls[1])
-        self.assertIn('os=os1', self.runner.calls[4])
+        self.assertIn('option1', self.runner.calls[4])
 
         # Next build from 3.8 is cached, not pulls are performed
-        self.assertIn('os=os3', self.runner.calls[5])
+        self.assertIn('option3', self.runner.calls[5])
 
     def test_docker_gcc_and_clang(self):
         self.packager = ConanMultiPackager(username="lasote",
@@ -325,14 +338,14 @@ class AppTest(unittest.TestCase):
         self.assertIn("docker pull conanio/gcc5", self.runner.calls[0])
         self.assertIn('docker run ', self.runner.calls[1])
 
-        self.assertIn('os=os1', self.runner.calls[4])
-        self.assertIn('os=os3', self.runner.calls[5])
+        self.assertIn('option1', self.runner.calls[4])
+        self.assertIn('option3', self.runner.calls[5])
 
         self.packager.run_builds(2, 2)
         self.assertIn("docker pull conanio/clang39", self.runner.calls[16])
         self.assertIn('docker run ', self.runner.calls[17])
-        self.assertIn('os=os4', self.runner.calls[20])
-        self.assertIn('os=os6', self.runner.calls[21])
+        self.assertIn('option4', self.runner.calls[20])
+        self.assertIn('option6', self.runner.calls[21])
 
     def test_upload_false(self):
         packager = ConanMultiPackager(username="lasote",
@@ -343,7 +356,7 @@ class AppTest(unittest.TestCase):
 
     def test_docker_env_propagated(self):
         # test env
-        with tools.environment_append({"CONAN_FAKE_VAR": "32"}):
+        with environment_append({"CONAN_FAKE_VAR": "32"}):
             self.packager = ConanMultiPackager(username="lasote",
                                                channel="mychannel",
                                                runner=self.runner,
@@ -358,7 +371,7 @@ class AppTest(unittest.TestCase):
             self.assertIn('-e CONAN_FAKE_VAR="32"', self.runner.calls[-1])
 
     def test_docker_home_env(self):
-        with tools.environment_append({"CONAN_DOCKER_HOME": "/some/dir"}):
+        with environment_append({"CONAN_DOCKER_HOME": "/some/dir"}):
             self.packager = ConanMultiPackager(username="lasote",
                                                channel="mychannel",
                                                runner=self.runner,
@@ -372,7 +385,7 @@ class AppTest(unittest.TestCase):
             self.packager.run_builds(1, 1)
             self.assertIn('-e CONAN_DOCKER_HOME="/some/dir"',
                           self.runner.calls[-1])
-            self.assertEquals(self.packager.docker_conan_home, "/some/dir")
+            self.assertEqual(self.packager.docker_conan_home, "/some/dir")
 
     def test_docker_home_opt(self):
         self.packager = ConanMultiPackager(username="lasote",
@@ -387,7 +400,7 @@ class AppTest(unittest.TestCase):
                                            ci_manager=self.ci_manager)
         self._add_build(1, "gcc", "5")
         self.packager.run_builds(1, 1)
-        self.assertEquals(self.packager.docker_conan_home, "/some/dir")
+        self.assertEqual(self.packager.docker_conan_home, "/some/dir")
 
     def test_docker_invalid(self):
         self.packager = ConanMultiPackager(username="lasote",
@@ -414,7 +427,7 @@ class AppTest(unittest.TestCase):
                                            ci_manager=self.ci_manager)
         self.packager.add_common_builds()
         self.packager.builds = [({"os": "Windows"}, {"option": "value"})]
-        self.assertEquals(self.packager.items, [BuildConf(settings={'os': 'Windows'},
+        self.assertEqual(self.packager.items, [BuildConf(settings={'os': 'Windows'},
                                                           options={'option': 'value'},
                                                           env_vars={}, build_requires={},
                                                           reference="lib/1.0@lasote/mychannel")])
@@ -425,7 +438,7 @@ class AppTest(unittest.TestCase):
         builder = ConanMultiPackager(mingw_configurations=mingw_configurations, visual_versions=[],
                                      username="Pepe", platform_info=platform_mock_for("Windows"),
                                      reference="lib/1.0", ci_manager=self.ci_manager)
-        with tools.environment_append({"CONAN_SHARED_OPTION_NAME": "zlib:shared"}):
+        with environment_append({"CONAN_SHARED_OPTION_NAME": "zlib:shared"}):
             builder.add_common_builds(pure_c=True)
         expected = [({'compiler.exception': 'seh', 'compiler.libcxx': "libstdc++",
                       'compiler.threads': 'posix', 'compiler.version': '4.9', 'arch': 'x86_64',
@@ -453,25 +466,25 @@ class AppTest(unittest.TestCase):
                      {},
                      {'*': [ConanFileReference.loads("mingw-w64/8.1")]})]
 
-        self.assertEquals([tuple(a) for a in builder.builds], expected)
+        self.assertEqual([tuple(a) for a in builder.builds], expected)
 
     def test_named_pages(self):
         builder = ConanMultiPackager(username="Pepe", reference="zlib/1.2.11",
                                      ci_manager=self.ci_manager)
         named_builds = defaultdict(list)
-        with tools.environment_append({"CONAN_SHARED_OPTION_NAME": "zlib:shared"}):
+        with environment_append({"CONAN_SHARED_OPTION_NAME": "zlib:shared"}):
             builder.add_common_builds(pure_c=True)
             for settings, options, env_vars, build_requires, _ in builder.items:
                 named_builds[settings['arch']].append([settings, options, env_vars, build_requires])
             builder.named_builds = named_builds
 
-        self.assertEquals(builder.builds, [])
+        self.assertEqual(builder.builds, [])
         if platform.system() == "Darwin":  # Not default x86 in Macos
-            self.assertEquals(len(builder.named_builds), 1)
+            self.assertEqual(len(builder.named_builds), 1)
             self.assertFalse("x86" in builder.named_builds)
             self.assertTrue("x86_64" in builder.named_builds)
         else:
-            self.assertEquals(len(builder.named_builds), 2)
+            self.assertEqual(len(builder.named_builds), 2)
             self.assertTrue("x86" in builder.named_builds)
             self.assertTrue("x86_64" in builder.named_builds)
 
@@ -483,11 +496,17 @@ class AppTest(unittest.TestCase):
                                      conan_api=self.conan_api,
                                      reference="lib/1.0@lasote/mychannel",
                                      ci_manager=self.ci_manager)
-
-        self.assertEquals(self.conan_api.calls[1].args[1], "url1")
-        self.assertEquals(self.conan_api.calls[1].kwargs["insert"], -1)
-        self.assertEquals(self.conan_api.calls[3].args[1], "url2")
-        self.assertEquals(self.conan_api.calls[3].kwargs["insert"], -1)
+        
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0], Remote("remote0", "url1"))
+            self.assertEqual(self.conan_api.calls[1].kwargs["index"], -1)
+            self.assertEqual(self.conan_api.calls[3].args[0], Remote("remote1", "url2"))
+            self.assertEqual(self.conan_api.calls[1].kwargs["index"], -1)
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[1], "url1")
+            self.assertEqual(self.conan_api.calls[1].kwargs["insert"], -1)
+            self.assertEqual(self.conan_api.calls[3].args[1], "url2")
+            self.assertEqual(self.conan_api.calls[3].kwargs["insert"], -1)
 
         runner = MockRunner()
         self.conan_api = MockConanAPI()
@@ -497,9 +516,12 @@ class AppTest(unittest.TestCase):
                                      conan_api=self.conan_api,
                                      reference="lib/1.0@lasote/mychannel",
                                      ci_manager=self.ci_manager)
-
-        self.assertEquals(self.conan_api.calls[1].args[1], "myurl1")
-        self.assertEquals(self.conan_api.calls[1].kwargs["insert"], -1)
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0],Remote("remote0", "myurl1"))
+            self.assertEqual(self.conan_api.calls[1].kwargs["index"], -1)
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[1], "myurl1")
+            self.assertEqual(self.conan_api.calls[1].kwargs["insert"], -1)
 
         # Named remotes, with SSL flag
         runner = MockRunner()
@@ -512,30 +534,34 @@ class AppTest(unittest.TestCase):
                                      conan_api=self.conan_api,
                                      reference="lib/1.0@lasote/mychannel",
                                      ci_manager=self.ci_manager)
-
-        self.assertEquals(self.conan_api.calls[1].args[0], "my_cool_name1")
-        self.assertEquals(self.conan_api.calls[1].args[1], "u1")
-        self.assertEquals(self.conan_api.calls[1].kwargs["insert"], -1)
-        self.assertEquals(self.conan_api.calls[1].kwargs["verify_ssl"], True)
-
-        self.assertEquals(self.conan_api.calls[3].args[0], "my_cool_name2")
-        self.assertEquals(self.conan_api.calls[3].args[1], "u2")
-        self.assertEquals(self.conan_api.calls[3].kwargs["insert"], -1)
-        self.assertEquals(self.conan_api.calls[3].kwargs["verify_ssl"], False)
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0],Remote("my_cool_name1", "u1", True))
+            self.assertEqual(self.conan_api.calls[1].kwargs["index"], -1)
+            self.assertEqual(self.conan_api.calls[3].args[0],Remote("my_cool_name2", "u2", False))
+            self.assertEqual(self.conan_api.calls[3].kwargs["index"], -1)
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[0], "my_cool_name1")
+            self.assertEqual(self.conan_api.calls[1].args[1], "u1")
+            self.assertEqual(self.conan_api.calls[1].kwargs["verify_ssl"], True)
+            self.assertEqual(self.conan_api.calls[1].kwargs["insert"], -1)
+            self.assertEqual(self.conan_api.calls[3].args[0], "my_cool_name2")
+            self.assertEqual(self.conan_api.calls[3].args[1], "u2")
+            self.assertEqual(self.conan_api.calls[3].kwargs["verify_ssl"], False)
+            self.assertEqual(self.conan_api.calls[3].kwargs["insert"], -1)
 
     def test_visual_defaults(self):
 
-        with tools.environment_append({"CONAN_VISUAL_VERSIONS": "10"}):
+        with environment_append({"CONAN_VISUAL_VERSIONS": "10"}):
             builder = ConanMultiPackager(username="Pepe",
                                          platform_info=platform_mock_for("Windows"),
                                          reference="lib/1.0@lasote/mychannel",
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             for settings, _, _, _, _ in builder.items:
-                self.assertEquals(settings["compiler"], "Visual Studio")
-                self.assertEquals(settings["compiler.version"], "10")
+                self.assertEqual(settings["compiler"], "Visual Studio")
+                self.assertEqual(settings["compiler.version"], "10")
 
-        with tools.environment_append({"CONAN_VISUAL_VERSIONS": "10",
+        with environment_append({"CONAN_VISUAL_VERSIONS": "10",
                                        "MINGW_CONFIGURATIONS": "4.9@x86_64@seh@posix"}):
 
             builder = ConanMultiPackager(username="Pepe",
@@ -544,12 +570,12 @@ class AppTest(unittest.TestCase):
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             for settings, _, _, _, _ in builder.items:
-                self.assertEquals(settings["compiler"], "gcc")
-                self.assertEquals(settings["compiler.version"], "4.9")
+                self.assertEqual(settings["compiler"], "gcc")
+                self.assertEqual(settings["compiler.version"], "4.9")
 
     def test_msvc_defaults(self):
 
-        with tools.environment_append({"CONAN_MSVC_VERSIONS": "193",
+        with environment_append({"CONAN_MSVC_VERSIONS": "193",
                                        "CONAN_VISUAL_VERSIONS": ""}):
             builder = ConanMultiPackager(username="Pepe",
                                          platform_info=platform_mock_for("Windows"),
@@ -557,10 +583,10 @@ class AppTest(unittest.TestCase):
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             for settings, _, _, _, _ in builder.items:
-                self.assertEquals(settings["compiler"], "msvc")
-                self.assertEquals(settings["compiler.version"], "193")
+                self.assertEqual(settings["compiler"], "msvc")
+                self.assertEqual(settings["compiler.version"], "193")
 
-        with tools.environment_append({"CONAN_MSVC_VERSIONS": "193",
+        with environment_append({"CONAN_MSVC_VERSIONS": "193",
                                        "CONAN_VISUAL_VERSIONS": "",
                                        "MINGW_CONFIGURATIONS": "4.9@x86_64@seh@posix"}):
 
@@ -570,38 +596,38 @@ class AppTest(unittest.TestCase):
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             for settings, _, _, _, _ in builder.items:
-                self.assertEquals(settings["compiler"], "gcc")
-                self.assertEquals(settings["compiler.version"], "4.9")
+                self.assertEqual(settings["compiler"], "gcc")
+                self.assertEqual(settings["compiler.version"], "4.9")
 
     def test_multiple_references(self):
-        with tools.environment_append({"CONAN_REFERENCE": "zlib/1.2.8"}):
+        with environment_append({"CONAN_REFERENCE": "zlib/1.2.8"}):
             builder = ConanMultiPackager(username="Pepe", ci_manager=self.ci_manager)
             builder.add_common_builds(reference="lib/1.0@lasote/mychannel")
             for _, _, _, _, reference in builder.items:
-                self.assertEquals(str(reference), "lib/1.0@lasote/mychannel")
+                self.assertEqual(str(reference), "lib/1.0@lasote/mychannel")
             builder.add_common_builds(reference="lib/2.0@lasote/mychannel")
             for _, _, _, _, reference in builder.items:
                 self.assertTrue(str(reference) in ("lib/1.0@lasote/mychannel", "lib/2.0@lasote/mychannel"))
 
     def test_select_defaults_test(self):
-        with tools.environment_append({"CONAN_REFERENCE": "zlib/1.2.8"}):
+        with environment_append({"CONAN_REFERENCE": "zlib/1.2.8"}):
             builder = ConanMultiPackager(platform_info=platform_mock_for("Linux"),
                                          gcc_versions=["4.8", "5"],
                                          username="foo",
                                          reference="lib/1.0@lasote/mychannel",
                                          ci_manager=self.ci_manager)
 
-            self.assertEquals(builder.build_generator._clang_versions, [])
+            self.assertEqual(builder.build_generator._clang_versions, [])
 
-        with tools.environment_append({"CONAN_GCC_VERSIONS": "4.8, 5",
+        with environment_append({"CONAN_GCC_VERSIONS": "4.8, 5",
                                        "CONAN_REFERENCE": "zlib/1.2.8"}):
             builder = ConanMultiPackager(platform_info=platform_mock_for("Linux"),
                                          username="foo",
                                          reference="lib/1.0@lasote/mychannel",
                                          ci_manager=self.ci_manager)
 
-            self.assertEquals(builder.build_generator._clang_versions, [])
-            self.assertEquals(builder.build_generator._gcc_versions, ["4.8", "5"])
+            self.assertEqual(builder.build_generator._clang_versions, [])
+            self.assertEqual(builder.build_generator._gcc_versions, ["4.8", "5"])
 
         builder = ConanMultiPackager(platform_info=platform_mock_for("Linux"),
                                      clang_versions=["4.8", "5"],
@@ -609,19 +635,19 @@ class AppTest(unittest.TestCase):
                                      reference="lib/1.0",
                                      ci_manager=self.ci_manager)
 
-        self.assertEquals(builder.build_generator._gcc_versions, [])
+        self.assertEqual(builder.build_generator._gcc_versions, [])
 
-        with tools.environment_append({"CONAN_CLANG_VERSIONS": "4.8, 5",
+        with environment_append({"CONAN_CLANG_VERSIONS": "4.8, 5",
                                        "CONAN_APPLE_CLANG_VERSIONS": " "}):
             builder = ConanMultiPackager(platform_info=platform_mock_for("Linux"),
                                          username="foo",
                                          reference="lib/1.0",
                                          ci_manager=self.ci_manager)
 
-            self.assertEquals(builder.build_generator._gcc_versions, [])
-            self.assertEquals(builder.build_generator._clang_versions, ["4.8", "5"])
-            self.assertEquals(builder.build_generator._clang_versions, ["4.8", "5"])
-            self.assertEquals(builder.build_generator._apple_clang_versions, [])
+            self.assertEqual(builder.build_generator._gcc_versions, [])
+            self.assertEqual(builder.build_generator._clang_versions, ["4.8", "5"])
+            self.assertEqual(builder.build_generator._clang_versions, ["4.8", "5"])
+            self.assertEqual(builder.build_generator._apple_clang_versions, [])
 
     def test_upload(self):
         runner = MockRunner()
@@ -639,8 +665,12 @@ class AppTest(unittest.TestCase):
         builder.run()
 
         # Duplicated upload remote puts upload repo first (in the remotes order)
-        self.assertEqual(self.conan_api.calls[1].args[0], 'upload_repo')
-        self.assertEqual(self.conan_api.calls[3].args[0], 'remote1')
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0].name, 'upload_repo')
+            self.assertEqual(self.conan_api.calls[3].args[0].name, 'remote1')
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[0], 'upload_repo')
+            self.assertEqual(self.conan_api.calls[3].args[0], 'remote1')
 
         # Now check that the upload remote order is preserved if we specify it in the remotes
         runner = MockRunner()
@@ -657,9 +687,14 @@ class AppTest(unittest.TestCase):
         builder.add_common_builds()
         builder.run()
 
-        self.assertEqual(self.conan_api.calls[1].args[0], 'remote0')
-        self.assertEqual(self.conan_api.calls[3].args[0], 'upload_repo')
-        self.assertEqual(self.conan_api.calls[5].args[0], 'remote2')
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0].name, 'remote0')
+            self.assertEqual(self.conan_api.calls[3].args[0].name, 'upload_repo')
+            self.assertEqual(self.conan_api.calls[5].args[0].name, 'remote2')
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[0], 'remote0')
+            self.assertEqual(self.conan_api.calls[3].args[0], 'upload_repo')
+            self.assertEqual(self.conan_api.calls[5].args[0], 'remote2')
 
         runner = MockRunner()
         self.conan_api = MockConanAPI()
@@ -675,8 +710,12 @@ class AppTest(unittest.TestCase):
         builder.add_common_builds()
         builder.run()
 
-        self.assertEqual(self.conan_api.calls[1].args[0], 'remote0')
-        self.assertEqual(self.conan_api.calls[3].args[0], 'upload_repo')
+        if CONAN_V2:
+            self.assertEqual(self.conan_api.calls[1].args[0].name, 'remote0')
+            self.assertEqual(self.conan_api.calls[3].args[0].name, 'upload_repo')
+        else:
+            self.assertEqual(self.conan_api.calls[1].args[0], 'remote0')
+            self.assertEqual(self.conan_api.calls[3].args[0], 'upload_repo')
 
     def test_build_policy(self):
         builder = ConanMultiPackager(username="pepe", channel="testing",
@@ -691,7 +730,12 @@ class AppTest(unittest.TestCase):
                                      ci_manager=self.ci_manager)
         builder.add_common_builds()
         builder.run()
-        self.assertEquals(["outdated"], self.conan_api.calls[-1].kwargs["build_modes"])
+        if CONAN_V2:
+            cmd = self.conan_api.calls[-1].kwargs["cmd"]
+            modes ={ cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
+        else:
+            modes = set(self.conan_api.calls[-1].kwargs["build_modes"])
+        self.assertEqual({"outdated"}, modes)
 
     def test_multiple_build_policy(self):
         builder = ConanMultiPackager(username="pepe", channel="testing",
@@ -706,11 +750,16 @@ class AppTest(unittest.TestCase):
                                      ci_manager=self.ci_manager)
         builder.add_common_builds()
         builder.run()
-        self.assertEquals(["Hello", "outdated"], self.conan_api.calls[-1].kwargs["build_modes"])
+        if CONAN_V2:
+            cmd = self.conan_api.calls[-1].kwargs["cmd"]
+            modes ={ cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
+        else:
+            modes = self.conan_api.calls[-1].kwargs["build_modes"]
+        self.assertEqual({"Hello", "outdated"}, modes)
 
 
         for build_policy, expected in [("missing", ["missing"]), ("all",[]), ("Hello,missing", ["Hello", "missing"])]:
-            with tools.environment_append({"CONAN_BUILD_POLICY": build_policy}):
+            with environment_append({"CONAN_BUILD_POLICY": build_policy}):
                 self.conan_api = MockConanAPI()
                 builder = ConanMultiPackager(username="pepe", channel="testing",
                                              reference="Hello/0.1", password="password",
@@ -724,7 +773,12 @@ class AppTest(unittest.TestCase):
                                              ci_manager=self.ci_manager)
                 builder.add_common_builds()
                 builder.run()
-                self.assertEquals(expected, self.conan_api.calls[-1].kwargs["build_modes"])
+                if CONAN_V2:
+                    cmd = self.conan_api.calls[-1].kwargs["cmd"]
+                    modes ={ cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
+                else:
+                    modes = self.conan_api.calls[-1].kwargs["build_modes"]
+                self.assertEqual(set(expected), modes)
 
     def test_test_folder(self):
         builder = ConanMultiPackager(username="pepe", channel="testing",
@@ -739,9 +793,12 @@ class AppTest(unittest.TestCase):
                                      ci_manager=self.ci_manager)
         builder.add_common_builds()
         builder.run()
-        self.assertEquals("foobar", self.conan_api.calls[-1].kwargs["test_folder"])
+        if CONAN_V2:
+            self.assertEqual("foobar", cmd_to_dict(self.conan_api.calls[-1].kwargs["cmd"])["-tf"])
+        else:
+            self.assertEqual("foobar", self.conan_api.calls[-1].kwargs["test_folder"])
 
-        with tools.environment_append({"CONAN_BUILD_POLICY": "missing"}):
+        with environment_append({"CONAN_BUILD_POLICY": "missing"}):
             self.conan_api = MockConanAPI()
             builder = ConanMultiPackager(username="pepe", channel="testing",
                                          reference="Hello/0.1", password="password",
@@ -755,7 +812,10 @@ class AppTest(unittest.TestCase):
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             builder.run()
-            self.assertEquals(None, self.conan_api.calls[-1].kwargs["test_folder"])
+            if CONAN_V2:
+                self.assertEqual('', cmd_to_dict(self.conan_api.calls[-1].kwargs["cmd"])["-tf"])
+            else:
+                self.assertEqual(None, self.conan_api.calls[-1].kwargs["test_folder"])
 
     def test_check_credentials(self):
 
@@ -829,7 +889,7 @@ class AppTest(unittest.TestCase):
                                          reference="lib/1.0",
                                          ci_manager=MockCIManager(current_branch=branch))
 
-            self.assertEquals(builder.channel, expected_channel, "Not match for branch %s" % branch)
+            self.assertEqual(builder.channel, expected_channel, "Not match for branch %s" % branch)
 
     def channel_detector_test_custom_branch_patterns(self):
 
@@ -843,13 +903,13 @@ class AppTest(unittest.TestCase):
                                          ("release/something", "a_channel"),
                                          ("master", "a_channel")]:
             # test env var
-            with tools.environment_append({"CONAN_STABLE_BRANCH_PATTERN": "trunk$ tags/.*"}):
+            with environment_append({"CONAN_STABLE_BRANCH_PATTERN": "trunk$ tags/.*"}):
                 builder = ConanMultiPackager(username="pepe",
                                              channel="a_channel",
                                              reference="lib/1.0",
                                              ci_manager=MockCIManager(current_branch=branch))
 
-                self.assertEquals(builder.channel, expected_channel, "Not match for branch %s" % branch)
+                self.assertEqual(builder.channel, expected_channel, "Not match for branch %s" % branch)
             # test passing as argument
             builder = ConanMultiPackager(username="pepe",
                                          channel="a_channel",
@@ -857,7 +917,7 @@ class AppTest(unittest.TestCase):
                                          stable_branch_pattern="trunk$ tags/.*",
                                          ci_manager=MockCIManager(current_branch=branch))
 
-            self.assertEquals(builder.channel, expected_channel, "Not match for branch %s" % branch)
+            self.assertEqual(builder.channel, expected_channel, "Not match for branch %s" % branch)
 
     def test_pip_conanio_image(self):
         self.packager = ConanMultiPackager(username="lasote",
@@ -904,7 +964,7 @@ class AppTest(unittest.TestCase):
         self.assertIn("sudo -E pip", self.runner.calls[1])
 
         self.runner.reset()
-        with tools.environment_append({"CONAN_PIP_USE_SUDO": "True"}):
+        with environment_append({"CONAN_PIP_USE_SUDO": "True"}):
             self.packager = ConanMultiPackager(username="lasote",
                                                 channel="mychannel",
                                                 runner=self.runner,
@@ -920,7 +980,7 @@ class AppTest(unittest.TestCase):
     def test_regular_pip_command(self):
         """ CPT Should call `pip` when CONAN_PIP_PACKAGE or CONAN_PIP_INSTALL are declared.
         """
-        with tools.environment_append({"CONAN_USERNAME": "foobar",
+        with environment_append({"CONAN_USERNAME": "foobar",
                                        "CONAN_PIP_PACKAGE": "conan==1.0.0-dev",
                                        "CONAN_PIP_INSTALL": "foobar==0.1.0"}):
             output = TestBufferConanOutput()
@@ -941,8 +1001,8 @@ class AppTest(unittest.TestCase):
     def test_custom_pip_command(self):
         """ CPT should run custom `pip` path when CONAN_PIP_COMMAND is declared.
         """
-        pip = "pip3" if tools.which("pip3") else "pip2"
-        with tools.environment_append({"CONAN_USERNAME": "foobar",
+        pip = "pip3" if which("pip3") else "pip2"
+        with environment_append({"CONAN_USERNAME": "foobar",
                                        "CONAN_PIP_PACKAGE": "conan==0.1.0",
                                        "CONAN_PIP_INSTALL": "foobar==0.1.0",
                                        "CONAN_PIP_COMMAND": pip}):
@@ -964,7 +1024,7 @@ class AppTest(unittest.TestCase):
     def test_invalid_pip_command(self):
         """ CPT should not accept invalid `pip` command when CONAN_PIP_COMMAND is declared.
         """
-        with tools.environment_append({"CONAN_USERNAME": "foobar",
+        with environment_append({"CONAN_USERNAME": "foobar",
                                        "CONAN_PIP_PACKAGE": "conan==0.1.0",
                                        "CONAN_PIP_COMMAND": "/bin/bash"}):
             output = TestBufferConanOutput()
@@ -983,6 +1043,7 @@ class AppTest(unittest.TestCase):
                 self.assertTrue("CONAN_PIP_COMMAND: '/bin/bash' is not a valid pip command" in context.exception)
             self.assertNotIn("[pip_update]", output)
 
+    @unittest.skipIf(CONAN_V2, "We don't have control over the export in V2")
     def test_skip_recipe_export(self):
 
         def _check_create_calls(skip_recipe_export):
@@ -1012,7 +1073,7 @@ class AppTest(unittest.TestCase):
         packager.run()
         _check_create_calls(False)
 
-        with tools.environment_append({"CONAN_SKIP_RECIPE_EXPORT": "True"}):
+        with environment_append({"CONAN_SKIP_RECIPE_EXPORT": "True"}):
             self.conan_api.reset()
             packager = ConanMultiPackager(username="lasote",
                                       channel="mychannel",
@@ -1075,7 +1136,7 @@ class AppTest(unittest.TestCase):
         packager.run()
         _check_run_calls(False)
 
-        with tools.environment_append({"CONAN_SKIP_RECIPE_EXPORT": "True"}):
+        with environment_append({"CONAN_SKIP_RECIPE_EXPORT": "True"}):
             self.runner.reset()
             packager = ConanMultiPackager(username="lasote",
                                       channel="mychannel",
@@ -1123,9 +1184,12 @@ class AppTest(unittest.TestCase):
                                      ci_manager=self.ci_manager)
         builder.add_common_builds()
         builder.run()
-        self.assertEquals("foobar.lock", self.conan_api.calls[-1].kwargs["lockfile"])
+        if CONAN_V2:
+            self.assertEqual("foobar.lock", cmd_to_dict(self.conan_api.calls[-1].kwargs["cmd"])["-l"])
+        else:
+            self.assertEqual("foobar.lock", self.conan_api.calls[-1].kwargs["lockfile"])
 
-        with tools.environment_append({"CONAN_LOCKFILE": "couse.lock"}):
+        with environment_append({"CONAN_LOCKFILE": "couse.lock"}):
             self.conan_api = MockConanAPI()
             builder = ConanMultiPackager(username="pepe", channel="testing",
                                          reference="Hello/0.1", password="password",
@@ -1139,7 +1203,11 @@ class AppTest(unittest.TestCase):
                                          ci_manager=self.ci_manager)
             builder.add_common_builds()
             builder.run()
-            self.assertEquals("couse.lock", self.conan_api.calls[-1].kwargs["lockfile"])
+            if CONAN_V2:
+                self.assertEqual("couse.lock", cmd_to_dict(self.conan_api.calls[-1].kwargs["cmd"])["-l"])
+            else:
+                self.assertEqual("couse.lock", self.conan_api.calls[-1].kwargs["lockfile"])
+
 
     def test_pure_c_env_var(self):
 
@@ -1155,10 +1223,10 @@ class AppTest(unittest.TestCase):
                      {},
                      {},
                      {})]
-        self.assertEquals([tuple(a) for a in builder.builds], expected)
+        self.assertEqual([tuple(a) for a in builder.builds], expected)
 
         builder.builds = []
-        with tools.environment_append({"CONAN_PURE_C": "True"}):
+        with environment_append({"CONAN_PURE_C": "True"}):
             builder.add_common_builds()
         expected = [({'arch': 'x86_64', 'build_type': 'Release',
                       'compiler': 'gcc',
@@ -1166,10 +1234,10 @@ class AppTest(unittest.TestCase):
                      {},
                      {},
                      {})]
-        self.assertEquals([tuple(a) for a in builder.builds], expected)
+        self.assertEqual([tuple(a) for a in builder.builds], expected)
 
         builder.builds = []
-        with tools.environment_append({"CONAN_PURE_C": "False"}):
+        with environment_append({"CONAN_PURE_C": "False"}):
             builder.add_common_builds()
         expected = [({'arch': 'x86_64', 'build_type': 'Release',
                       'compiler': 'gcc',
@@ -1185,7 +1253,7 @@ class AppTest(unittest.TestCase):
                      {},
                      {},
                      {})]
-        self.assertEquals([tuple(a) for a in builder.builds], expected)
+        self.assertEqual([tuple(a) for a in builder.builds], expected)
 
     def test_docker_cwd(self):
         cwd = os.path.join(os.getcwd(), 'subdir')
