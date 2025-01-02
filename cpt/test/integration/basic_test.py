@@ -108,7 +108,7 @@ class Pkg(ConanFile):
         self.save_conanfile(conanfile)
         self.packager = ConanMultiPackager(username="lasote")
         self.packager.add_common_builds()
-        self.assertIn("lib/*:shared" if CONAN_V2 else "lib2:shared", self.packager.items[0].options)
+        self.assertIn("lib/*:shared" if CONAN_V2 else "lib:shared", self.packager.items[0].options)
 
         # Even without name and version but reference
         conanfile = """from conan import ConanFile

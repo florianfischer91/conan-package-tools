@@ -1,10 +1,5 @@
 import os
 
-from conans import tools
-from conans.client.conan_api import Conan
-from conans.model.ref import ConanFileReference
-from conans.model.version import Version
-
 from cpt.auth import AuthManager
 from cpt.printer import Printer
 from cpt.profiles import save_profile_to_tmp
@@ -12,7 +7,7 @@ from cpt.remotes import RemotesManager
 from cpt.runner import CreateRunner, unscape_env
 from cpt.uploader import Uploader
 from cpt import get_client_version
-
+from cpt._compat import save, ConanFileReference, Conan, Version
 
 def run():
     conan_version = get_client_version()
@@ -53,7 +48,7 @@ def run():
     skip_recipe_export = unscape_env(os.getenv("CPT_SKIP_RECIPE_EXPORT"))
     if base_profile_text:
         base_profile_name = unscape_env(os.getenv("CPT_BASE_PROFILE_NAME"))
-        tools.save(os.path.join(client_cache.profiles_path, base_profile_name),
+        save(os.path.join(client_cache.profiles_path, base_profile_name),
                    base_profile_text)
     if profile_build_text:
         abs_profile_build_path = save_profile_to_tmp(profile_build_text)

@@ -28,7 +28,7 @@ class ProfileTest(BaseTest):
                 [conf]
                 """)
         if CONAN_V2:
-            build_profile=build_profile.replace("build_requires", "tool_requires").replace("[env]", "")
+            build_profile=build_profile.replace("build_requires", "tool_requires").replace("[env]", "[buildenv]")
         build_profile_path = os.path.join(self.tmp_folder, "build_profile")
         save(build_profile_path, build_profile)
 
@@ -42,7 +42,7 @@ class ProfileTest(BaseTest):
                         [conf]
                         """)
         if CONAN_V2:
-            host_profile=host_profile.replace("build_requires", "tool_requires").replace("[env]", "")
+            host_profile=host_profile.replace("build_requires", "tool_requires").replace("[env]", "[buildenv]")
         host_profile_path = os.path.join(self.tmp_folder, "host_profile")
         save(host_profile_path, host_profile)
         self.packager = ConanMultiPackager(username="elcidcampeador",

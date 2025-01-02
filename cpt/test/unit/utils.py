@@ -143,7 +143,7 @@ class MockConanAPI(object):
             profile_name = call.kwargs["profile_name"]
         else:
             if CONAN_V2:
-                profile_name = call.kwargs["cmd"][call.kwargs["cmd"].index("-pr")+1]
+                profile_name = call.kwargs["cmd"][call.kwargs["cmd"].index("-pr:h")+1]
             else:
                 profile_name = call.kwargs["profile_names"][0]
         replace_in_file(profile_name, "include", "#include")

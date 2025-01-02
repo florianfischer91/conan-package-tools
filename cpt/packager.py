@@ -781,7 +781,11 @@ class ConanMultiPackager(object):
                             "the compiler %s" % compiler_name)
 
         if compiler_name == "gcc" and Version(compiler_version) > Version("5"):
-            compiler_version = Version(compiler_version).major(fill=False)
+            compiler_version = Version(compiler_version).major
+            if not CONAN_V2:
+                compiler_version = compiler_version(fill=False)
+            else:
+                compiler_version = str(compiler_version)
 
         return "conanio/%s%s" % (compiler_name, compiler_version.replace(".", ""))
 

@@ -122,7 +122,7 @@ if CONAN_V2:
 
     def _load_profile(profile_abs_path, conan_api, client_cache):
         loader = profile_loader.ProfileLoader(conan_api.cache_folder)
-        return loader.load_profile("default", profile_abs_path)
+        return loader.load_profile(profile_abs_path, conan_api.cache_folder)
     
     profile_template = """
 include(%s)
@@ -308,7 +308,9 @@ def create_package(self: 'CreateRunner', name, version, channel, user, profile_b
         cmd = [
             self._conanfile, "--version", str(version), "--name", name,
             "--user", user, "--channel", channel,
-            "-pr", self._profile_abs_path
+            "-pr:h", self._profile_abs_path,
+            # if there is no build profile provided we use the same for host and build
+            "-pr:b", self._profile_build_abs_path or self._profile_abs_path,
         ]
         cmd.extend(["-tf", self._test_folder or ""])
         cmd.extend(["-l", self._lockfile or ""])

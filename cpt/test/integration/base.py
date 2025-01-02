@@ -38,7 +38,12 @@ class BaseTest(unittest.TestCase):
 
     def create_project(self):
         with chdir(self.tmp_folder):
-            if Version(client_version) >= "1.32.0":
+            if Version(client_version) >= "2":
+                from conan.cli.commands.new import new
+                from argparse import ArgumentParser
+                cmd = ["basic", "-d", "name=hello", "-d", "version=0.1.0"]
+                new.method(self.api,ArgumentParser(), cmd)
+            elif Version(client_version) >= "1.32.0":
                 self.api.new("hello/0.1.0", pure_c=True, exports_sources=True)
             else:
                 self.api.new("hello/0.1.0")
