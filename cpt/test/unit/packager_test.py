@@ -167,7 +167,7 @@ class AppTest(unittest.TestCase):
 
     def test_deprecation_gcc(self):
 
-        with self.assertRaisesRegexp(Exception, "DEPRECATED GCC MINOR VERSIONS!"):
+        with self.assertRaisesRegex(Exception, "DEPRECATED GCC MINOR VERSIONS!"):
             ConanMultiPackager(username="lasote",
                                channel="mychannel",
                                runner=self.runner,
@@ -752,9 +752,9 @@ class AppTest(unittest.TestCase):
         builder.run()
         if CONAN_V2:
             cmd = self.conan_api.calls[-1].kwargs["cmd"]
-            modes ={ cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
+            modes ={cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
         else:
-            modes = self.conan_api.calls[-1].kwargs["build_modes"]
+            modes = set(self.conan_api.calls[-1].kwargs["build_modes"])
         self.assertEqual({"Hello", "outdated"}, modes)
 
 
@@ -775,9 +775,9 @@ class AppTest(unittest.TestCase):
                 builder.run()
                 if CONAN_V2:
                     cmd = self.conan_api.calls[-1].kwargs["cmd"]
-                    modes ={ cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
+                    modes ={cmd[i+1] for i in range(1,len(cmd),2) if cmd[i] == "-b"}
                 else:
-                    modes = self.conan_api.calls[-1].kwargs["build_modes"]
+                    modes = set(self.conan_api.calls[-1].kwargs["build_modes"])
                 self.assertEqual(set(expected), modes)
 
     def test_test_folder(self):

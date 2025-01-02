@@ -98,7 +98,7 @@ class Pkg(ConanFile):
             tmpl = "Uploading package '{0}" if CONAN_V2 else "Uploading packages for '{0}'"
 
             for pkg in  ("foobar/2.0@user/testing","bar/0.1.0@foo/stable", 
-                        "foo/1.0.0@bar/testing", "qux/1.0.0"):
+                        "foo/1.0.0@bar/testing", f"qux/1.0.0{'#' if CONAN_V2 else '@'}"):
                 self.assertIn(tmpl.format(pkg), out)
 
             # Upload new version of foo/1.0.0@bar/testing and re-add old revision in local cache

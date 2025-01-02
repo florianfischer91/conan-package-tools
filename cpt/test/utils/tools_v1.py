@@ -18,26 +18,23 @@ from requests.exceptions import HTTPError
 from six.moves.urllib.parse import urlsplit, urlunsplit
 from webtest.app import TestApp
 
-from cpt._compat import (load, CONAN_V2, ConanAPI as ConanAPIV2, 
-Conan, IterableToFileAdapter, ConanRunner, environment_append, ConanFileReference, get_env
-)
-
+from conans import load
 from conans.cli.cli import Cli
-from conans.client.cache.remote_registry import Remotes
-from conans.client.tools.files import replace_in_file
-from conans.model.ref import PackageReference
-from conans.server.revision_list import _RevisionEntry
+from conans.client.api.conan_api import ConanAPIV2
 from conans.client.cache.cache import ClientCache
+from conans.client.cache.remote_registry import Remotes
+from conans.client.command import Command
+from conans.client.conan_api import Conan
+from conans.client.rest.file_uploader import IterableToFileAdapter
+from conans.client.runner import ConanRunner
+from conans.client.tools import environment_append
+from conans.client.tools.files import replace_in_file
 from conans.errors import NotFoundException, RecipeNotFoundException, PackageNotFoundException
-
-
-# from conans.client.api.conan_api import ConanAPIV2
-# from conans.client.conan_api import Conan
-# from conans.client.runner import ConanRunner
-# from conans.client.tools import environment_append
 from conans.model.manifest import FileTreeManifest
 from conans.model.profile import Profile
+from conans.model.ref import ConanFileReference, PackageReference
 from conans.model.settings import Settings
+from conans.server.revision_list import _RevisionEntry
 from cpt.test.assets import copy_assets
 from cpt.test.assets.genconanfile import GenConanfile
 from cpt.test.utils.mocks import MockedUserIO, TestBufferConanOutput
@@ -47,6 +44,8 @@ from cpt.test.utils.server_launcher import (TESTING_REMOTE_PRIVATE_PASS,
                                                TESTING_REMOTE_PRIVATE_USER,
                                                TestServerLauncher)
 from cpt.test.utils.test_files import temp_folder
+from conans.util.conan_v2_mode import CONAN_V2_MODE_ENVVAR
+from conans.util.env_reader import get_env
 from conans.util.files import mkdir, save_files
 
 NO_SETTINGS_PACKAGE_ID = "5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9"
@@ -459,30 +458,16 @@ if get_env("CONAN_TEST_WITH_ARTIFACTORY", False):
 
 def _copy_cache_folder(target_folder):
     # Some variables affect to cache population (take a different default folder)
-    vars = ['CC', 'CXX', 'PATH']
-    if not CONAN_V2:
-        from conans.util.conan_v2_mode import CONAN_V2_MODE_ENVVAR
-        vars.insert(0, CONAN_V2_MODE_ENVVAR)
-
+    vars = [CONAN_V2_MODE_ENVVAR, 'CC', 'CXX', 'PATH']
     cache_key = hash('|'.join(map(str, [os.environ.get(it, None) for it in vars])))
     master_folder = _copy_cache_folder.master.setdefault(cache_key, temp_folder(create_dir=False))
-    # TODO check how to translate to conan2
     if not os.path.exists(master_folder):
-    #     # Create and populate the cache folder with the defaults
-        api = Conan(master_folder)
-        from conan.api.subapi.config import ConfigAPI
-        ConfigAPI.load_config(master_folder)
-        detected_profile = api.profiles.detect()
-        profile_pathname = api.profiles.get_path("default", os.getcwd(), exists=False)
-        contents = detected_profile.dumps()
-        save(profile_pathname, contents)
-
-
-    #     cache = ClientCache(master_folder, TestBufferConanOutput())
-    #     cache.initialize_config()
-    #     cache.registry.initialize_remotes()
-    #     cache.initialize_default_profile()
-    #     cache.initialize_settings()
+        # Create and populate the cache folder with the defaults
+        cache = ClientCache(master_folder, TestBufferConanOutput())
+        cache.initialize_config()
+        cache.registry.initialize_remotes()
+        cache.initialize_default_profile()
+        cache.initialize_settings()
     shutil.copytree(master_folder, target_folder)
 
 
@@ -572,12 +557,7 @@ class TestClient(object):
     @property
     def cache(self):
         # Returns a temporary cache object intended for inspecting it
-        if CONAN_V2:
-            from conan.internal.cache.cache import PkgCache
-            from conan.api.subapi.config import ConfigAPI
-            return PkgCache(self.cache_folder, ConfigAPI.load_config(self.cache_folder))
-        else:
-            return ClientCache(self.cache_folder, TestBufferConanOutput())
+        return ClientCache(self.cache_folder, TestBufferConanOutput())
 
     @property
     def base_folder(self):
@@ -641,12 +621,7 @@ class TestClient(object):
 
     def update_servers(self):
         cache = self.cache
-        if CONAN_V2:
-            api = Conan(self.base_folder)
-            from conan.api.subapi.remotes import RemotesAPI
-            RemotesAPI(api).list()
-        else:
-            Remotes().save(cache.remotes_path)
+        Remotes().save(cache.remotes_path)
         registry = cache.registry
 
         for name, server in self.servers.items():
@@ -699,7 +674,6 @@ class TestClient(object):
         if os.getenv("CONAN_V2_CLI"):
             command = Cli(conan)
         else:
-            from conans.client.command import Command
             command = Command(conan)
         args = shlex.split(command_line)
         current_dir = os.getcwd()

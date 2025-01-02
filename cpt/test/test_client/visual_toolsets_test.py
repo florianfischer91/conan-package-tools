@@ -42,6 +42,10 @@ class Pkg(ConanFile):
                 self.assertIn("compiler.toolset=v140", out)
                 self.assertIn("compiler.toolset=v140_xp", out)
             else:
-                # TODO We are uploading too many packages...
-                self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:b351051c2c0b8ed4d5b7a820570b965b73ccf698")
-                self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:8435e2cb57f34f98567355bbe0a78d98f38f272a")
+                if CONAN_V2:
+                    # TODO We are uploading too many packages...
+                    self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:b351051c2c0b8ed4d5b7a820570b965b73ccf698")
+                    self.assertRegex(out, r"Uploading package 'lib/1.0@user/stable#.*:8435e2cb57f34f98567355bbe0a78d98f38f272a")
+                else: 
+                    self.assertIn("Uploading package 1/2", out)
+                    self.assertIn("Uploading package 2/2", out)

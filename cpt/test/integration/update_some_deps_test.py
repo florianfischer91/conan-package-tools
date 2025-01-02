@@ -113,11 +113,11 @@ class Pkg(ConanFile):
             mulitpackager.run()
             out = mulitpackager.printer.printer.dump()
 
-            self.assertRegex(out, r'bar/0.1.0@foo/stable#.* - Cache')
-            self.assertRegex(out, r'foo/1.0.0@bar/testing#.* - Cache')
-            self.assertRegex(out, r'qux/1.0.0@qux/stable#.* - Cache')
+            self.assertRegex(out, r'bar/0.1.0@foo/stable.* - Cache')
+            self.assertRegex(out, r'foo/1.0.0@bar/testing.* - Cache')
+            self.assertRegex(out, r'qux/1.0.0@qux/stable.* - Cache')
 
-            self.assertRegex(out, r'foobar/2.0@user/testing#.* - Build')
+            self.assertRegex(out, r'foobar/2.0@user/testing.* - Build')
 
             
             self.assertIn(tmpl.format("foobar/2.0@user/testing"), out)
