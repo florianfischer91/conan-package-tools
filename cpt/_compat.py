@@ -41,7 +41,10 @@ if CONAN_V2:
 
     if os.environ.get("CONAN_USER_HOME"):
         raise Exception("Use 'CONAN_HOME' instead of 'CONAN_USER_HOME", os.environ.get("CONAN_USER_HOME"))
+    if os.environ.get("CONAN_REVISIONS_ENABLED") == "0":
+        raise Exception("Setting 'CONAN_REVISIONS_ENABLED' to zero not supported")
     
+
     class ProfileData(namedtuple("ProfileData", ["profiles", "settings", "options", "env", "conf"])):
         def __bool__(self):
             return bool(self.profiles or self.settings or self.options or self.env or self.conf)
