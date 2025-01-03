@@ -188,7 +188,6 @@ class Pkg(ConanFile):
 
         self.assertTrue(found_in_export_sources)
 
-    @unittest.skip("TODO check why this doesn't work any longer")
     def test_build_policy(self):
         ci_manager = MockCIManager()
         conanfile = """from conan import ConanFile
@@ -200,6 +199,7 @@ class Pkg(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
 """
+        # "outdated" was removed in CONAN_V2 so we are using "missing"
         self.save_conanfile(conanfile)
         with environment_append({"CONAN_USERNAME": "lasote"}):
             self.packager = ConanMultiPackager(channel="mychannel",
@@ -207,13 +207,13 @@ class Pkg(ConanFile):
                                                visual_versions=["17"],
                                                archs=["x86", "x86_64"],
                                                build_types=["Release"],
-                                               build_policy="outdated",
+                                               build_policy="missing" if CONAN_V2 else "outdated",
                                                ci_manager=ci_manager)
             self.packager.add_common_builds()
             self.packager.run()
 
         with environment_append({"CONAN_USERNAME": "lasote",
-                                       "CONAN_BUILD_POLICY": "outdated"}):
+                                       "CONAN_BUILD_POLICY": "missing" if CONAN_V2 else "outdated"}):
             self.packager = ConanMultiPackager(channel="mychannel",
                                                gcc_versions=["12"],
                                                visual_versions=["17"],
@@ -223,7 +223,6 @@ class Pkg(ConanFile):
             self.packager.add_common_builds()
             self.packager.run()
 
-    @unittest.skip("TODO check why this doesn't work any longer")
     def test_multiple_build_policy(self):
         ci_manager = MockCIManager()
         conanfile = """from conan import ConanFile
@@ -235,6 +234,7 @@ class Pkg(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
 """
+        # "outdated" was removed in CONAN_V2 so we are using other policies
         self.save_conanfile(conanfile)
         with environment_append({"CONAN_USERNAME": "lasote"}):
             self.packager = ConanMultiPackager(channel="mychannel",
@@ -242,13 +242,13 @@ class Pkg(ConanFile):
                                                visual_versions=["17"],
                                                archs=["x86", "x86_64"],
                                                build_types=["Release"],
-                                               build_policy=["cascade", "outdated"],
+                                               build_policy=["cascade", "missing"],
                                                ci_manager=ci_manager)
             self.packager.add_common_builds()
             self.packager.run()
 
         with environment_append({"CONAN_USERNAME": "lasote",
-                                       "CONAN_BUILD_POLICY": "outdated, lib"}):
+                                       "CONAN_BUILD_POLICY": "missing:lib, lib"}):
             self.packager = ConanMultiPackager(channel="mychannel",
                                                gcc_versions=["6"],
                                                visual_versions=["17"],
