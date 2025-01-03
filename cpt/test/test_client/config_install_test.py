@@ -28,7 +28,7 @@ class Pkg(ConanFile):
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user",
                                  "CONAN_CONFIG_URL": zip_path}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"])
             mulitpackager.add_common_builds(reference="lib/1.0@user/stable",
                                             shared_option_name=False)
             mulitpackager.run()

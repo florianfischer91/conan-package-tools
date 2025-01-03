@@ -45,7 +45,7 @@ class ProfileTest(BaseTest):
             host_profile=host_profile.replace("build_requires", "tool_requires").replace("[env]", "[buildenv]")
         host_profile_path = os.path.join(self.tmp_folder, "host_profile")
         save(host_profile_path, host_profile)
-        self.packager = ConanMultiPackager(username="elcidcampeador",
+        self.packager = ConanMultiPackager(username="elcidcampeador", gcc_versions=["7", "8"], # limit num of builds
                                            reference="tizona/1.0.40@elcidcampeador/testing", out=self.output.write)
         self.packager.add_common_builds()
         self.packager.run_builds(curpage=1, total_pages=1, base_profile_name=host_profile_path,

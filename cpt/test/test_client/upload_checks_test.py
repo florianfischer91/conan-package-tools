@@ -102,7 +102,7 @@ class Pkg(ConanFile):
                                  "TRAVIS": "1"}):
 
             
-            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"])
             mp.add_common_builds(shared_option_name=False)
             mp.run()
             out = mp.printer.printer.dump()
@@ -133,7 +133,7 @@ class Pkg(ConanFile):
                                  "TRAVIS": "1", "TRAVIS_TAG": "0.1"}):
 
             
-            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"])
             mp.add_common_builds(shared_option_name=False)
             mp.run()
             out = mp.printer.printer.dump()
@@ -293,7 +293,7 @@ class Pkg(ConanFile):
                                  "CONAN_PASSWORD": "password", "CONAN_REFERENCE": "lib/1.0@",
                                  }):
 
-            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mp = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"])
             mp.add_common_builds(shared_option_name=False)
             mp.run()
             out = mp.printer.printer.dump()
@@ -340,7 +340,7 @@ class Pkg(ConanFile):
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "foo",
                                 "CONAN_PASSWORD": "password", "CONAN_USERNAME": "foo",
                                 "CONAN_UPLOAD_FORCE": "True"}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"])
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)
             mulitpackager.run()
@@ -358,7 +358,7 @@ class Pkg(ConanFile):
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "foo",
                                 "CONAN_PASSWORD": "password", "CONAN_USERNAME": "foo",
                                 "CONAN_UPLOAD_FORCE": "FALSE"}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True,
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"],
                                                       upload_force=True)
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)
@@ -380,7 +380,7 @@ class Pkg(ConanFile):
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "foo",
                                 "CONAN_PASSWORD": "password", "CONAN_USERNAME": "foo",
                                 "CONAN_UPLOAD_FORCE": "FALSE"}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True,
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"], archs=["x86"],
                                                       upload_force=False)
             mulitpackager.add_common_builds(reference="lib/1.0@foo/stable",
                                             shared_option_name=False)

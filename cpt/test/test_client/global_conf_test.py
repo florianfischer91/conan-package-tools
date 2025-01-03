@@ -21,7 +21,7 @@ class GlobalConfTest(unittest.TestCase):
         global_conf = ["tools.system.package_manager:mode=install", "tools.system.package_manager:sudo=True"]
 
         with environment_append({"CONAN_GLOBAL_CONF": ",".join(global_conf)}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"])
             mulitpackager.add_common_builds(reference="lib/1.0@user/stable", shared_option_name=False)
             mulitpackager.run()
             if CONAN_V2:

@@ -27,7 +27,7 @@ class Pkg(ConanFile):
         tc.save({"conanfile.py": self.conanfile})
         with environment_append({"CONAN_UPLOAD": ts.fake_url, "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user"}):
-            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True)
+            mulitpackager = get_patched_multipackager(tc, exclude_vcvars_precommand=True, gcc_versions=["7"])
             mulitpackager.add({"arch": "x86_64"}, {})
             mulitpackager.add({"arch": "x86"}, {})
             mulitpackager.run()
