@@ -1,3 +1,4 @@
+import os
 import subprocess
 import unittest
 import time
@@ -10,7 +11,7 @@ from cpt.packager import ConanMultiPackager
 from cpt.test.integration.base import BaseTest, CONAN_UPLOAD_PASSWORD, CONAN_LOGIN_UPLOAD
 from cpt.test.unit.utils import MockCIManager
 from cpt.ci_manager import is_github_actions
-from cpt._compat import CONAN_V2, is_linux, which, ConanFileReference, environment_append
+from cpt._compat import CONAN_V2, is_linux, replace_in_file, which, ConanFileReference, environment_append
 
 def is_linux_and_have_docker():
     return is_linux and which("docker")
@@ -22,8 +23,16 @@ class DockerTest(BaseTest):
 
     def setUp(self):
         super(DockerTest, self).setUp()
-        self.server_process = subprocess.Popen("conan_server")
+        server_folder = os.path.join(self.tmp_folder, ".conan_server")
+        self.server_process = subprocess.Popen(["conan_server", "--server_dir", server_folder])
         time.sleep(3)
+        if CONAN_V2:
+            write_permissions = "[write_permissions]\n*/*@*/*: *\n"
+            replace_in_file(os.path.join(server_folder,"server.conf"),"[write_permissions]\n\n", write_permissions)
+            self.server_process.kill()
+            time.sleep(3)
+            self.server_process = subprocess.Popen(["conan_server", "--server_dir", server_folder])
+            time.sleep(3)
 
     def tearDown(self):
         self.server_process.kill()
@@ -52,6 +61,8 @@ class DockerTest(BaseTest):
                                        "CONAN_USERNAME": "demo",
                                        "CONAN_DOCKER_USE_SUDO": "FALSE",
                                        "PIP_REQUIRE_VIRTUALENV": "FALSE",
+                                       "CONAN_PIP_PACKAGE": "conan==2.*" if CONAN_V2 else "0",
+                                       "CONAN_INSTALL_CPT": "0" if CONAN_V2 else "1",
                                        "CONAN_UPLOAD": DockerTest.CONAN_SERVER_ADDRESS,
                                        "CONAN_PASSWORD": "demo"}):
 
@@ -60,6 +71,7 @@ class DockerTest(BaseTest):
                                                archs=["x86", "x86_64"],
                                                build_types=["Release"],
                                                reference=unique_ref,
+                                               always_update_conan_in_docker=True,
                                                ci_manager=ci_manager)
             self.packager.add_common_builds()
             self.packager.run()
@@ -77,6 +89,18 @@ class DockerTest(BaseTest):
                                   remote="upload_repo")
             self.api.remove(search_pattern, remote="upload_repo", force=True)
             self.assertEqual(self.api.search_recipes(search_pattern)["results"], [])
+        elif CONAN_V2:
+            remote = self.api.remotes.get("upload_repo")
+            results = self.api.search.recipes(search_pattern, remote=remote)
+            self.assertEqual(len(results), 1)
+            ref.revision = "latest"
+            packages = self.api.list.packages_configurations(ref, remote=remote)
+            self.assertEqual(len(packages), 2)
+                
+            self.api.app.remote_manager.authenticate(remote, "demo", "demo")
+            results = self.api.list.latest_recipe_revision(ref, remote=remote)
+            self.api.remove.recipe(results,remote)
+            self.assertEqual(self.api.search.recipes(search_pattern, remote=remote), [])
         else:
             results = self.api.search_recipes(search_pattern, remote_name="upload_repo")["results"][0]["items"]
             self.assertEqual(len(results), 1)
@@ -114,6 +138,13 @@ class DockerTest(BaseTest):
             results = self.api.search_recipes(search_pattern, remote="upload_repo")["results"]
             self.assertEqual(len(results), 0)
             self.api.remove(search_pattern, remote="upload_repo", force=True)
+        elif CONAN_V2:
+            from conan.internal.errors import RecipeNotFoundException
+            results = self.api.search.recipes(search_pattern, remote=remote)
+            self.assertEqual(len(results), 0)
+            ref.revision="latest"
+            with self.assertRaises(RecipeNotFoundException):
+                self.api.remove.recipe(ref, remote=remote)
         else:
             results = self.api.search_recipes(search_pattern, remote_name="upload_repo")["results"]
             self.assertEqual(len(results), 0)
@@ -181,7 +212,7 @@ class DockerTest(BaseTest):
 
     @unittest.skipUnless(is_linux_and_have_docker(), "Requires Linux and Docker")
     @unittest.skipIf(is_github_actions(), "FIXME: It fails on Github Actions")
-    @unittest.skipif(CONAN_V2, "Can't generate a pure c project with 'conan new'")
+    @unittest.skipIf(CONAN_V2, "Can't generate a pure c project with 'conan new'")
     def test_docker_run_android(self):
         self.create_project()
         profile = '-e CPT_PROFILE="@@include(default)@@@@[settings]@@arch=x86_64@@build_type=Release@@compiler=clang@@compiler.version=8@@[options]@@@@[env]@@@@[build_requires]@@@@" '

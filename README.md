@@ -8,6 +8,11 @@
 
 In case you need such support, please, open an issue explaining your current case with more details.
 
+Experimental support added for conan 2.x. No guarantee that everything works as it should do.
+
+- not tested on windows
+
+
 # Conan Package Tools
 
 - [Conan Package Tools](#conan-package-tools)
@@ -37,7 +42,7 @@ In case you need such support, please, open an issue explaining your current cas
   - [Upload packages](#upload-packages)
   - [Upload dependencies (#237)](#upload-dependencies-237)
   - [Pagination](#pagination)
-    - [Sequencial distribution](#sequencial-distribution)
+    - [Sequential distribution](#sequential-distribution)
     - [Named pages](#named-pages)
     - [Generating multiple references for the same recipe](#generating-multiple-references-for-the-same-recipe)
   - [Working with Bintray: Configuring repositories](#working-with-bintray-configuring-repositories)

@@ -65,9 +65,9 @@ if CONAN_V2:
             os.environ.update(old_env)
 
 
-    def replace_in_file(path, new, old):
+    def replace_in_file(path, old, new, count=-1):
         content = load(path)
-        content = content.replace(new, old)
+        content = content.replace(old, new, count)
         save(path, content)
 
     class ConanFileReference(RecipeReference):

@@ -234,7 +234,7 @@ class DockerCreateRunner(object):
     def _pip_update_conan_command(self):
         commands = []
         # Hack for testing when retrieving cpt from artifactory repo
-        if "conan-package-tools" not in self._conan_pip_package:
+        if "conan-package-tools" not in self._conan_pip_package and os.getenv("CONAN_INSTALL_CPT", "1")=="1":
             commands.append("%s %s install conan_package_tools==%s "
                             "--upgrade --no-cache" % (self._sudo_pip_command,
                                                       self._docker_pip_command,
