@@ -1,0 +1,33 @@
+[project]
+name = 'conan_package_tools'
+description = 'Packaging tools for Conan C/C++ package manager'
+authors = [
+    {name = 'JFrog LTD', email = 'info@conan.io'},
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development :: Build Tools',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3',
+]
+requires-python = '>=3.7'
+dependencies = [
+    'six>=1.10.0,<=1.16.0',
+    'conan>=1.52.0',
+    'tabulate>=0.8.0, <0.9.0',
+    'pyyaml!=6.0.0,!=5.4.0,!=5.4.1; python_version=="3.12"'
+]
+dynamic = ['version']
+
+[project.urls]
+Source = 'https://github.com/conan-io/conan-package-tools'
+
+[tool.setuptools.dynamic]
+version = {attr = "cpt.__version__"}
+
+[project.scripts]
+run_create_in_docker="cpt.run_in_docker:run"
+
+[tool.setuptools]
+package-dir = {"" = "cpt"}

@@ -50,7 +50,7 @@ class BaseTest(unittest.TestCase):
     def root_project_folder(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         for i in range(10):
-            if "setup.py" in os.listdir(dir_path):
+            if "pyproject.toml" in os.listdir(dir_path):
                 return dir_path
             else:
                 dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
