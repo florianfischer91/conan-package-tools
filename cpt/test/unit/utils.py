@@ -6,8 +6,6 @@ import mock
 from cpt._compat import ConanFileReference, replace_in_file, CONAN_V2, Conan
 from cpt.test.utils.test_files import temp_folder
 from conans.util.files import save
-from conans.model.version import Version
-from cpt import get_client_version
 
 
 class MockRunner(object):
@@ -138,14 +136,11 @@ class MockConanAPI(object):
     def get_profile_from_call(self, call):
         if call.name != "create":
             raise Exception("Invalid test, not contains a create: %s" % self.calls)
-        conan_version = get_client_version()
-        if Version(conan_version) < Version("1.12.0"):
-            profile_name = call.kwargs["profile_name"]
+
+        if CONAN_V2:
+            profile_name = call.kwargs["cmd"][call.kwargs["cmd"].index("-pr:h")+1]
         else:
-            if CONAN_V2:
-                profile_name = call.kwargs["cmd"][call.kwargs["cmd"].index("-pr:h")+1]
-            else:
-                profile_name = call.kwargs["profile_names"][0]
+            profile_name = call.kwargs["profile_names"][0]
         replace_in_file(profile_name, "include", "#include")
         if CONAN_V2:
             return self.api.profiles.get_profile([profile_name])

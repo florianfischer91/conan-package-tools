@@ -5,10 +5,9 @@ import time
 import textwrap
 
 
-from conans.model.version import Version
 from cpt import get_client_version
 from cpt.packager import ConanMultiPackager
-from cpt.test.integration.base import BaseTest, CONAN_UPLOAD_PASSWORD, CONAN_LOGIN_UPLOAD
+from cpt.test.integration.base import BaseTest
 from cpt.test.unit.utils import MockCIManager
 from cpt.ci_manager import is_github_actions
 from cpt._compat import CONAN_V2, is_linux, replace_in_file, which, ConanFileReference, environment_append
@@ -80,16 +79,7 @@ class DockerTest(BaseTest):
         ref = ConanFileReference.loads("%s@demo/mychannel" % unique_ref)
 
         # Remove from remote
-        if Version(client_version) < Version("1.7"):
-            results = self.api.search_recipes(search_pattern, remote="upload_repo")["results"][0]["items"]
-            self.assertEqual(len(results), 1)
-            packages = self.api.search_packages(ref, remote="upload_repo")["results"][0]["items"][0]["packages"]
-            self.assertEqual(len(packages), 2)
-            self.api.authenticate(name=CONAN_LOGIN_UPLOAD, password=CONAN_UPLOAD_PASSWORD,
-                                  remote="upload_repo")
-            self.api.remove(search_pattern, remote="upload_repo", force=True)
-            self.assertEqual(self.api.search_recipes(search_pattern)["results"], [])
-        elif CONAN_V2:
+        if CONAN_V2:
             remote = self.api.remotes.get("upload_repo")
             results = self.api.search.recipes(search_pattern, remote=remote)
             self.assertEqual(len(results), 1)
@@ -104,8 +94,7 @@ class DockerTest(BaseTest):
         else:
             results = self.api.search_recipes(search_pattern, remote_name="upload_repo")["results"][0]["items"]
             self.assertEqual(len(results), 1)
-            if Version(client_version) >= Version("1.12.0"):
-                ref = repr(ref)
+            ref = repr(ref)
             packages = self.api.search_packages(ref, remote_name="upload_repo")["results"][0]["items"][0]["packages"]
             self.assertEqual(len(packages), 2)
             self.api.authenticate(name="demo", password="demo",
@@ -134,11 +123,7 @@ class DockerTest(BaseTest):
             self.packager.add_common_builds()
             self.packager.run()
 
-        if Version(client_version) < Version("1.7"):
-            results = self.api.search_recipes(search_pattern, remote="upload_repo")["results"]
-            self.assertEqual(len(results), 0)
-            self.api.remove(search_pattern, remote="upload_repo", force=True)
-        elif CONAN_V2:
+        if CONAN_V2:
             from conan.internal.errors import RecipeNotFoundException
             results = self.api.search.recipes(search_pattern, remote=remote)
             self.assertEqual(len(results), 0)

@@ -1,26 +1,16 @@
-import six
-
-from conans.model.version import Version
-from cpt import get_client_version
-
 from cpt.packager import ConanMultiPackager
 from cpt._compat import Conan, CONAN_V2
 
 
 
 def get_patched_multipackager(tc, *args, **kwargs):
-    client_version = get_client_version()
     extra_init_kwargs = {}
-    if Version("1.11") < Version(client_version) < Version("1.18"):
-        extra_init_kwargs.update({'requester': tc.requester})
 
-    elif Version("2") > Version(client_version) >= Version("1.18"):
+    if not CONAN_V2:
         extra_init_kwargs.update({'http_requester': tc.requester})
 
-    if Version(client_version) < Version("1.12.0"):
-        cache = tc.client_cache
-    else:
-        cache = tc.cache
+
+    cache = tc.cache
 
     if CONAN_V2:
         conan_api = Conan(cache_folder=tc.cache_folder, **extra_init_kwargs)
@@ -49,8 +39,6 @@ def get_patched_multipackager(tc, *args, **kwargs):
                 self.tc = tc
 
             def __call__(self, contents):
-                if six.PY2:
-                    contents = unicode(contents)
                 self.tc.out.write(contents)
             
             def dump(self):

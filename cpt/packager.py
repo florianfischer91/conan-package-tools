@@ -1,7 +1,6 @@
 import os
 import platform
 import re
-import sys
 import copy
 from collections import defaultdict
 from itertools import product
@@ -24,44 +23,15 @@ from cpt.config import ConfigManager
 from cpt._compat import CONAN_V2, environment_append, Conan, ConanRunner, ConanFileReference, is_windows, which, load_remotes, Version, use_pattern
 
 def load_cf_class(path, conan_api):
-    client_version = get_client_version()
-    client_version = Version(client_version)
-    if client_version < Version("1.7.0"):
-        from conans.client.loader_parse import load_conanfile_class
-        return load_conanfile_class(path)
-    elif client_version < Version("1.14.0"):
-        return conan_api._loader.load_class(path)
-    elif client_version < Version("1.15.0"):
-        remotes = conan_api._cache.registry.remotes.list
-        for remote in remotes:
-            conan_api.python_requires.enable_remotes(remote_name=remote)
-        return conan_api._loader.load_class(path)
-    elif client_version < Version("1.16.0"):
-        remotes = conan_api._cache.registry.load_remotes()
-        conan_api.python_requires.enable_remotes(remotes=remotes)
-        return conan_api._loader.load_class(path)
-    elif client_version < Version("1.18.0"):
-        remotes = conan_api._cache.registry.load_remotes()
-        conan_api._python_requires.enable_remotes(remotes=remotes)
-        return conan_api._loader.load_class(path)
-    else:
-        if not conan_api.app:
-            conan_api.create_app()
-        remotes = load_remotes(conan_api)
-        # TODO Fix python requires for v2
-        if client_version < Version("2"):
-            conan_api.app.python_requires.enable_remotes(remotes=remotes)
-
-        if client_version < Version("1.20.0"):
-            return conan_api.app.loader.load_class(path)
-        elif client_version < Version("1.21.0"):
-            return conan_api.app.loader.load_basic(path)
-        else:
-            # TODO Fix for v2
-            if client_version < Version("2"):
-                conan_api.app.pyreq_loader.enable_remotes(remotes=remotes)
-                return conan_api.app.loader.load_named(path, None, None, None, None)
-            return conan_api.app.loader.load_named(path, None, None, None, None, remotes=remotes)
+    if not conan_api.app:
+        conan_api.create_app()
+    remotes = load_remotes(conan_api)
+    # TODO Fix python requires for v2
+    if CONAN_V2:
+        return conan_api.app.loader.load_named(path, None, None, None, None, remotes=remotes)
+    conan_api.app.python_requires.enable_remotes(remotes=remotes)
+    conan_api.app.pyreq_loader.enable_remotes(remotes=remotes)
+    return conan_api.app.loader.load_named(path, None, None, None, None)
 
 
 class PlatformInfo(object):
@@ -653,8 +623,6 @@ class ConanMultiPackager(object):
 
         base_profile_build_name = base_profile_build_name or os.getenv("CONAN_BASE_PROFILE_BUILD")
         if base_profile_build_name is not None:
-            if get_client_version() < Version("1.24.0"):
-                raise Exception("Conan Profile Build requires >= 1.24")
             self.printer.print_message("**************************************************")
             self.printer.print_message("Using specified "
                                         "build profile: %s" % base_profile_build_name)

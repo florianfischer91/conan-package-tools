@@ -355,10 +355,8 @@ def upload_package(self: 'CreateRunner', client_version: Version):
                                             "it hasn't been built" % package_id)
     else:
         for installed in self._results['installed']:
-            reference = installed["recipe"]["id"]
-            if client_version >= Version("1.10.0"):
-                reference = ConanFileReference.loads(reference)
-                reference = str(reference.copy_clear_rev())
+            reference = ConanFileReference.loads(installed["recipe"]["id"])
+            reference = str(reference.copy_clear_rev())
             if ((reference == str(self._reference)) or
             (reference in self._upload_dependencies) or
             ("all" in self._upload_dependencies)) and \

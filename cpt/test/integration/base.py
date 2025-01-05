@@ -1,8 +1,7 @@
 import os
 import unittest
 
-from cpt._compat import CONAN_HOME_ENV_VAR, CONAN_V2, mkdir_tmp, Conan, save, chdir, Version
-from conan import conan_version as client_version
+from cpt._compat import CONAN_HOME_ENV_VAR, CONAN_V2, mkdir_tmp, Conan, save, chdir
 
 from cpt.test.utils.tools import TestBufferConanOutput
 
@@ -38,15 +37,14 @@ class BaseTest(unittest.TestCase):
 
     def create_project(self):
         with chdir(self.tmp_folder):
-            if Version(client_version) >= "2":
+            if CONAN_V2:
                 from conan.cli.commands.new import new
                 from argparse import ArgumentParser
                 cmd = ["basic", "-d", "name=hello", "-d", "version=0.1.0"]
                 new.method(self.api,ArgumentParser(), cmd)
-            elif Version(client_version) >= "1.32.0":
-                self.api.new("hello/0.1.0", pure_c=True, exports_sources=True)
             else:
-                self.api.new("hello/0.1.0")
+                self.api.new("hello/0.1.0", pure_c=True, exports_sources=True)
+
 
     @property
     def root_project_folder(self):

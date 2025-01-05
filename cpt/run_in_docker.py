@@ -6,17 +6,12 @@ from cpt.profiles import save_profile_to_tmp
 from cpt.remotes import RemotesManager
 from cpt.runner import CreateRunner, unscape_env
 from cpt.uploader import Uploader
-from cpt import get_client_version
-from cpt._compat import save, ConanFileReference, Conan, Version
+from cpt._compat import save, ConanFileReference, Conan
 
 def run():
-    conan_version = get_client_version()
-    if conan_version < Version("1.18.0"):
-        conan_api, client_cache, _ = Conan.factory()
-    else:
-        conan_api, _, _ = Conan.factory()
-        conan_api.create_app()
-        client_cache = conan_api.app.cache
+    conan_api, _, _ = Conan.factory()
+    conan_api.create_app()
+    client_cache = conan_api.app.cache
 
     printer = Printer()
 

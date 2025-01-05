@@ -5,13 +5,11 @@ import re
 import time
 from collections import namedtuple
 
-from conans.model.version import Version
-
 from cpt import __version__ as package_tools_version, get_client_version
 from cpt.config import ConfigManager, GlobalConf
 from cpt.printer import Printer
 from cpt.profiles import load_profile, patch_default_base_profile
-from cpt._compat import CONAN_HOME_ENV_VAR, no_op, load, environment_append, ConanFileReference, ProfileData, chdir, CONAN_V2, create_package, upload_package, vcvars, which
+from cpt._compat import CONAN_HOME_ENV_VAR, no_op, load, environment_append, ProfileData, chdir, ConanInvalidConfiguration, create_package, upload_package, vcvars, which
 
 
 class CreateRunner(object):
@@ -55,16 +53,10 @@ class CreateRunner(object):
         self._global_conf = global_conf
 
         patch_default_base_profile(conan_api, profile_abs_path)
-        client_version = get_client_version()
 
-        if client_version < Version("1.12.0"):
-            cache = self._conan_api._client_cache
-        elif client_version < Version("1.18.0"):
-            cache = self._conan_api._cache
-        else:
-            if not conan_api.app:
-                conan_api.create_app()
-            cache = conan_api.app.cache
+        if not conan_api.app:
+            conan_api.create_app()
+        cache = conan_api.app.cache
 
         self._profile = load_profile(profile_abs_path, conan_api, cache)
 
@@ -106,10 +98,7 @@ class CreateRunner(object):
                 self.printer.print_profile(load(self._profile_build_abs_path))
 
             with self.printer.foldable_output("conan_create"):
-                if client_version < Version("1.10.0"):
-                    name, version, user, channel = self._reference
-                else:
-                    name, version, user, channel, _ = self._reference
+                name, version, user, channel, _ = self._reference
 
                 if self._build_policy:
                     self._build_policy = [] if self._build_policy == ["all"] else self._build_policy
@@ -123,35 +112,14 @@ class CreateRunner(object):
                     self.printer.print_message("Calling 'conan create'")
                     self.printer.print_dict(params)
                     with chdir(self._cwd):
-                        if Version(client_version) >= "1.8.0":
-                            from cpt._compat import ConanInvalidConfiguration
-                            exc_class = ConanInvalidConfiguration
-                        else:
-                            exc_class = None
-
                         try:
-                            if client_version < Version("1.12.0"):
-                                self._results = self._conan_api.create(self._conanfile, name=name, version=version,
-                                                        user=user, channel=channel,
-                                                        build_modes=self._build_policy,
-                                                        require_overrides=self._require_overrides,
-                                                        profile_name=self._profile_abs_path,
-                                                        test_folder=self._test_folder,
-                                                        not_export=self.skip_recipe_export,
-                                                        update=self._update_dependencies)
-                            else:
-                                if self._profile_build_abs_path is not None:
-                                    if client_version < Version("1.38.0"):
-                                        profile_build = ProfileData(profiles=[self._profile_build_abs_path], settings=None,
-                                                                    options=None, env=None)
-                                    else:
-                                        profile_build = ProfileData(profiles=[self._profile_build_abs_path], settings=None,
-                                                                    options=None, env=None, conf=None)
-                                else:
-                                    profile_build = None
+                            profile_build = None
+                            if self._profile_build_abs_path is not None:
+                                profile_build = ProfileData(profiles=[self._profile_build_abs_path], settings=None,
+                                                            options=None, env=None, conf=None)
 
-                                create_package(self, name, version, channel, user, profile_build)
-                        except exc_class as e:
+                            create_package(self, name, version, channel, user, profile_build)
+                        except ConanInvalidConfiguration as e:
                             self.printer.print_rule()
                             self.printer.print_message("Skipped configuration by the recipe: "
                                                        "%s" % str(e))

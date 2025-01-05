@@ -1,7 +1,5 @@
-from conans.model.version import Version
 
-from cpt import get_client_version
-from cpt._compat import UPLOAD_POLICY_FORCE
+from cpt._compat import CONAN_V2, UPLOAD_POLICY_FORCE
 
 class Uploader(object):
 
@@ -22,7 +20,6 @@ class Uploader(object):
         self._upload_artifacts(reference, upload, package_id)
 
     def _upload_artifacts(self, reference, upload, package_id=None):
-        client_version = get_client_version()
         remote_name = self.remote_manager.upload_remote_name
         if not remote_name:
             self.printer.print_message("Upload skipped, not upload remote available")
@@ -36,19 +33,8 @@ class Uploader(object):
             self.printer.print_message("Uploading packages for '%s'" % str(reference))
             self.auth_manager.login(remote_name)
 
-            if client_version < Version("1.7.0"):
-                self.conan_api.upload(str(reference),
-                                      package=package_id,
-                                      remote=remote_name,
-                                      force=self._force,
-                                      retry=int(self._upload_retry))
-            elif client_version < Version("1.8.0"):
-                self.conan_api.upload(str(reference),
-                                      package=package_id,
-                                      remote_name=remote_name,
-                                      force=self._force,
-                                      retry=int(self._upload_retry))
-            elif client_version > Version("2"):
+            
+            if CONAN_V2:
                 all_packages = package_id is not None
                 remote = self.conan_api.remotes.get(remote_name)
                 from conan.api.model import ListPattern
