@@ -1,7 +1,7 @@
 import unittest
 
-from cpt.test.utils.tools import TestClient, pos_args
-from cpt.test.test_client.tools import get_patched_multipackager
+from tests.utils.tools import TestClient, pos_args
+from tests.test_client.tools import get_patched_multipackager
 
 
 class PythonRequiresTest(unittest.TestCase):

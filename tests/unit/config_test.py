@@ -2,9 +2,9 @@ import unittest
 
 from cpt.config import ConfigManager
 from cpt.printer import Printer
-from cpt.test.integration.base import BaseTest
-from cpt.test.unit.packager_test import MockConanAPI
 from cpt._compat import CONAN_V2, ConanException
+from tests.integration.base import BaseTest
+from tests.unit.packager_test import MockConanAPI
 
 class RemotesTest(unittest.TestCase):
 

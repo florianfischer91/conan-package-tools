@@ -2,8 +2,8 @@ import unittest
 import textwrap
 from cpt.config import GlobalConf
 from cpt.printer import Printer
-from cpt.test.unit.packager_test import MockConanAPI
 from cpt._compat import load
+from tests.unit.packager_test import MockConanAPI
 
 class GlobalConfUnitTest(unittest.TestCase):
 

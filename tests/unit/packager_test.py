@@ -7,9 +7,9 @@ from collections import defaultdict
 
 from cpt.builds_generator import BuildConf
 from cpt.packager import ConanMultiPackager
-from cpt.test.utils.tools import TestBufferConanOutput
 from cpt._compat import CONAN_V2, ConanFileReference, environment_append, which
-from cpt.test.unit.utils import MockConanAPI, MockRunner, MockCIManager, cmd_to_dict
+from tests.utils.tools import TestBufferConanOutput
+from tests.unit.utils import MockConanAPI, MockRunner, MockCIManager, cmd_to_dict
 
 if CONAN_V2:
     from conan.api.model import Remote

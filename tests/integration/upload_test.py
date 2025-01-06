@@ -1,6 +1,6 @@
-from cpt.test.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
-from cpt.test.unit.utils import MockCIManager
+from tests.integration.base import BaseTest
+from tests.unit.utils import MockCIManager
 from cpt._compat import CONAN_V2, ConanException, add_remote, environment_append
 
 class UploadTest(BaseTest):

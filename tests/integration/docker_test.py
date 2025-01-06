@@ -7,8 +7,8 @@ import textwrap
 
 from cpt import get_client_version
 from cpt.packager import ConanMultiPackager
-from cpt.test.integration.base import BaseTest
-from cpt.test.unit.utils import MockCIManager
+from tests.integration.base import BaseTest
+from tests.unit.utils import MockCIManager
 from cpt.ci_manager import is_github_actions
 from cpt._compat import CONAN_V2, is_linux, replace_in_file, which, ConanFileReference, environment_append
 

@@ -3,7 +3,7 @@ import unittest
 from cpt._compat import environment_append
 from cpt.printer import Printer
 from cpt.remotes import RemotesManager
-from cpt.test.unit.packager_test import MockConanAPI
+from tests.unit.packager_test import MockConanAPI
 
 
 class RemotesTest(unittest.TestCase):

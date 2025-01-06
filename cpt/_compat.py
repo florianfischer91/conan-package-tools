@@ -293,9 +293,8 @@ def get_default_profile_path(conan_api: ConanAPI):
         return conan_api.app.cache.default_profile_path
     
 def get_global_conf(conan_api):
-    from cpt.test.unit.utils import MockConanAPI
 
-    if CONAN_V2 and not isinstance(conan_api, MockConanAPI):
+    if CONAN_V2:
         from conan.api.subapi.config import HomePaths
         ConanAPI(None).config.global_conf
         cache_folder = conan_api.cache_folder

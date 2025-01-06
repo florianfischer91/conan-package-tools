@@ -5,10 +5,10 @@ import textwrap
 
 from conans.model.manifest import FileTreeManifest
 
-from cpt.test.utils.tools import TestClient, TestServer, pos_args
-from cpt.test.unit.utils import MockCIManager
+from tests.utils.tools import TestClient, TestServer, pos_args
+from tests.unit.utils import MockCIManager
+from tests.test_client.tools import get_patched_multipackager
 
-from cpt.test.test_client.tools import get_patched_multipackager
 from cpt._compat import CONAN_V2, environment_append, PackageReference
 
 class UploadTest(unittest.TestCase):

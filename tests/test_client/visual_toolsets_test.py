@@ -1,11 +1,9 @@
 import platform
 import unittest
 
-from cpt._compat import environment_append
-from cpt.test.utils.tools import TestClient, TestServer
-
-from cpt.test.test_client.tools import get_patched_multipackager
-from cpt._compat import CONAN_V2
+from cpt._compat import CONAN_V2, environment_append
+from tests.utils.tools import TestClient, TestServer
+from tests.test_client.tools import get_patched_multipackager
 
 
 class VisualToolsetsTest(unittest.TestCase):

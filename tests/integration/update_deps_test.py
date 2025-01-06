@@ -1,9 +1,9 @@
 import unittest
 
-from cpt._compat import CONAN_V2, environment_append
-from cpt.test.utils.tools import TestClient, TestServer, pos_args
-from cpt.test.unit.utils import MockCIManager
-from cpt.test.test_client.tools import get_patched_multipackager
+from cpt._compat import environment_append, CONAN_V2
+from tests.utils.tools import TestClient, TestServer, pos_args
+from tests.unit.utils import MockCIManager
+from tests.test_client.tools import get_patched_multipackager
 
 
 
@@ -55,32 +55,31 @@ class Pkg(ConanFile):
 class Pkg(ConanFile):
     name = "foobar"
     version = "2.0"
-    requires = "bar/0.1.0@foo/stable", "foo/1.0.0@bar/testing", "qux/1.0.0@qux/stable"
+    requires = "bar/0.1.0@foo/stable", "foo/1.0.0@bar/testing", "qux/1.0.0"
 
     def build(self):
         self.output.warning("BUILDING")
 """
-
 
     def setUp(self):
         self._ci_manager = MockCIManager()
         self._server = TestServer(users={"user": "password"},
                                   write_permissions=[("bar/0.1.0@foo/stable", "user"),
                                                      ("foo/1.0.0@bar/testing", "user"),
-                                                     ("qux/1.0.0@qux/stable", "user"),
+                                                     ("foo/1.0.0@user/testing", "user"),
+                                                     ("qux/1.0.0@_/_", "user"),
                                                      ("foobar/2.0@user/testing", "user")])
         self._client = TestClient(servers={"default": self._server},
-                                  users={"default": [("user", "password")]}
-                                  )
+                                  users={"default": [("user", "password")]})
         self._client.save({"conanfile_bar.py": self.conanfile_bar})
         self._client.run(f"export conanfile_bar.py { pos_args('foo/stable') }")
         self._client.save({"conanfile_foo.py": self.conanfile_foo})
         self._client.run(f"export conanfile_foo.py { pos_args('bar/testing') }")
         self._client.save({"conanfile_foo3.py": self.conanfile_foo_3})
-        self._client.run(f"export conanfile_foo3.py { pos_args('qux/stable') }")
+        self._client.run("export conanfile_foo3.py")
         self._client.save({"conanfile.py": self.conanfile})
 
-    def test_update_some_dependencies(self):
+    def test_update_all_dependencies(self):
         with environment_append({"CONAN_UPLOAD":  self._server.fake_url,
                                  "CONAN_LOGIN_USERNAME": "user",
                                  "CONAN_PASSWORD": "password", "CONAN_USERNAME": "user",
@@ -89,7 +88,7 @@ class Pkg(ConanFile):
 
             mulitpackager = get_patched_multipackager(self._client, username="user",
                                                       channel="testing",
-                                                      build_policy=["foobar/*", "bar/*", "foo/*", "qux/*"],
+                                                      build_policy="missing",
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager)
             mulitpackager.add({}, {})
@@ -99,31 +98,34 @@ class Pkg(ConanFile):
             tmpl = "Uploading package '{0}" if CONAN_V2 else "Uploading packages for '{0}'"
 
             for pkg in  ("foobar/2.0@user/testing","bar/0.1.0@foo/stable", 
-                        "foo/1.0.0@bar/testing", "qux/1.0.0@qux/stable"):
+                        "foo/1.0.0@bar/testing", f"qux/1.0.0{'#' if CONAN_V2 else '@'}"):
                 self.assertIn(tmpl.format(pkg), out)
 
-            # only build and upload foobar
+            # Upload new version of foo/1.0.0@bar/testing and re-add old revision in local cache
+            self._client.save({"conanfile_foo.py": self.conanfile_foo_2})
             mulitpackager = get_patched_multipackager(self._client, username="user",
                                                       channel="testing",
-                                                      build_policy=["foobar/*"],
+                                                      build_policy="missing",
                                                       exclude_vcvars_precommand=True,
                                                       ci_manager=self._ci_manager,
-                                                      conanfile="conanfile.py")
+                                                      conanfile="conanfile_foo.py")
             mulitpackager.add({}, {})
             mulitpackager.run()
             out = mulitpackager.printer.printer.dump()
 
-            self.assertRegex(out, r'bar/0.1.0@foo/stable.* - Cache')
-            self.assertRegex(out, r'foo/1.0.0@bar/testing.* - Cache')
-            self.assertRegex(out, r'qux/1.0.0@qux/stable.* - Cache')
-
-            self.assertRegex(out, r'foobar/2.0@user/testing.* - Build')
-
             
-            self.assertIn(tmpl.format("foobar/2.0@user/testing"), out)
-            self.assertNotIn(tmpl.format("bar/0.1.0@foo/stable"), out)
-            self.assertNotIn(tmpl.format("foo/1.0.0@bar/testing"), out)
-            self.assertNotIn(tmpl.format("qux/1.0.0@qux/stable"), out)
+            self._client.run(f"remove {'-c' if CONAN_V2 else '-f'} foo/1.0.0@bar/testing")
+            self._client.save({"conanfile_foo.py": self.conanfile_foo})
+            self._client.run(f"export conanfile_foo.py  { pos_args('bar/testing') }")
 
+            # build again and update newest revision from remote
+            mulitpackager = get_patched_multipackager(self._client, username="user",
+                                                      channel="testing",
+                                                      build_policy="missing",
+                                                      exclude_vcvars_precommand=True,
+                                                      ci_manager=self._ci_manager)
+            mulitpackager.add({}, {})
+            mulitpackager.run()
+            out = mulitpackager.printer.printer.dump()
 
-
+            self.assertIn("foo/1.0.0@bar/testing: Package installed", out)

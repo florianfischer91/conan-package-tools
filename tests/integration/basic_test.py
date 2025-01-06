@@ -6,9 +6,9 @@ import json
 from cpt._compat import CONAN_V2, ConanFileReference, ConanException, save, environment_append, use_pattern
 
 
-from cpt.test.integration.base import BaseTest
+from tests.integration.base import BaseTest
+from tests.unit.utils import MockCIManager
 from cpt.packager import ConanMultiPackager
-from cpt.test.unit.utils import MockCIManager
 
 
 class SimpleTest(BaseTest):

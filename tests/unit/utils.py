@@ -4,7 +4,7 @@ from collections import namedtuple
 import mock
 
 from cpt._compat import ConanFileReference, replace_in_file, CONAN_V2, Conan
-from cpt.test.utils.test_files import temp_folder
+from tests.utils.test_files import temp_folder
 from conans.util.files import save
 
 

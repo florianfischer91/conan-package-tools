@@ -1,9 +1,9 @@
 import unittest
 
-from cpt.test.utils.tools import TestBufferConanOutput
+from tests.utils.tools import TestBufferConanOutput
 from cpt.auth import AuthManager
 from cpt.printer import Printer
-from cpt.test.unit.packager_test import MockConanAPI
+from tests.unit.packager_test import MockConanAPI
 from cpt._compat import environment_append
 
 class AuthTest(unittest.TestCase):

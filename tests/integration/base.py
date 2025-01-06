@@ -3,7 +3,7 @@ import unittest
 
 from cpt._compat import CONAN_HOME_ENV_VAR, CONAN_V2, mkdir_tmp, Conan, save, chdir
 
-from cpt.test.utils.tools import TestBufferConanOutput
+from tests.utils.tools import TestBufferConanOutput
 
 CONAN_UPLOAD_URL = os.getenv("CONAN_UPLOAD_URL",
                              "https://conan.jfrog.io/conan/api/conan/conan-testsuite")

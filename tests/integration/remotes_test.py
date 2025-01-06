@@ -1,7 +1,7 @@
 from cpt._compat import list_remotes, remove_remote, add_remote
 from cpt.printer import Printer
 from cpt.remotes import RemotesManager
-from cpt.test.integration.base import BaseTest
+from tests.integration.base import BaseTest
 
 
 class RemotesTest(BaseTest):

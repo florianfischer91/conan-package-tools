@@ -1,7 +1,7 @@
 import os
 import textwrap
 
-from cpt.test.integration.base import BaseTest
+from tests.integration.base import BaseTest
 from cpt.packager import ConanMultiPackager
 from cpt._compat import CONAN_V2, save
 

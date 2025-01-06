@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from cpt.test.utils.tools import TestBufferConanOutput
+from tests.utils.tools import TestBufferConanOutput
 from cpt.packager import ConanMultiPackager
 from cpt.ci_manager import CIManager
 

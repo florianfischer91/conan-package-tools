@@ -1,8 +1,8 @@
 import unittest
 
 from cpt._compat import CONAN_V2
-from cpt.test.utils.tools import TestClient
-from cpt.test.test_client.tools import get_patched_multipackager
+from tests.utils.tools import TestClient
+from tests.test_client.tools import get_patched_multipackager
 
 
 class RequireOverridesTest(unittest.TestCase):
