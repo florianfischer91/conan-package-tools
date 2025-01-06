@@ -7,7 +7,7 @@ import tempfile
 import unittest
 import uuid
 
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 from cpt._compat import CONAN_V2
 if CONAN_V2:

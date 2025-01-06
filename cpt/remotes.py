@@ -1,8 +1,7 @@
 import os
 from collections import namedtuple
-from six import string_types
 
-from cpt._compat import CONAN_V2, add_remote, list_remotes, remove_remote
+from cpt._compat import add_remote, list_remotes, remove_remote
 
 
 class Remote(namedtuple("Remote", "url use_ssl name")):
@@ -28,12 +27,12 @@ class RemotesManager(object):
         self.printer = printer
 
         if remotes_input:
-            if isinstance(remotes_input, string_types):
+            if isinstance(remotes_input, str):
                 for n, r in enumerate(remotes_input.split(",")):
                     self._remotes.append(Remote(r.strip(), True, "remote%s" % n))
             elif hasattr(remotes_input, '__iter__'):
                 for n, r in enumerate(remotes_input):
-                    if isinstance(r, string_types):
+                    if isinstance(r, str):
                         self._remotes.append(self._get_remote_from_str(r, "remotes", name="remote%s" % n))
                     elif len(r) == 2:
                         self._remotes.append(Remote(r[0].strip(), r[1], "remote%s" % n))
@@ -47,7 +46,7 @@ class RemotesManager(object):
                     self._remotes.append(remote)
 
         if upload_input:
-            if isinstance(upload_input, string_types):
+            if isinstance(upload_input, str):
                 self._upload = Remote(upload_input, True, "upload_repo")
             elif hasattr(upload_input, '__iter__'):
                 if len(upload_input) != 3:

@@ -1,5 +1,4 @@
 import os
-from six import string_types
 
 from cpt._compat import CONAN_V2
 
@@ -45,7 +44,7 @@ class AuthManager(object):
 
     @staticmethod
     def _get_single_login_username(logins_input):
-        if logins_input and isinstance(logins_input, string_types):
+        if logins_input and isinstance(logins_input, str):
             return logins_input
         if os.getenv("CONAN_LOGIN_USERNAME"):
             return os.getenv("CONAN_LOGIN_USERNAME").replace('"', '\\"')
@@ -54,7 +53,7 @@ class AuthManager(object):
 
     @staticmethod
     def _get_single_password(passwords_input):
-        if passwords_input and isinstance(passwords_input, string_types):
+        if passwords_input and isinstance(passwords_input, str):
             return passwords_input
         if not passwords_input and os.getenv("CONAN_PASSWORD"):
             return os.getenv("CONAN_PASSWORD").replace('"', '\\"')

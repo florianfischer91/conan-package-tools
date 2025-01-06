@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 
 import time
-from six import BytesIO
+from io import BytesIO
 
 from cpt._compat import CONAN_V2
 

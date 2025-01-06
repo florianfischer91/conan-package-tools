@@ -5,8 +5,6 @@ import copy
 from collections import defaultdict
 from itertools import product
 
-import six
-
 from cpt import get_client_version
 from cpt.auth import AuthManager
 from cpt.builds_generator import BuildConf, BuildGenerator
@@ -305,9 +303,7 @@ class ConanMultiPackager(object):
         self.lockfile = lockfile or os.getenv("CONAN_LOCKFILE")
 
         def valid_pair(var, value):
-            return (isinstance(value, six.string_types) or
-                    isinstance(value, bool) or
-                    isinstance(value, list)) and not var.startswith("_") and "password" not in var
+            return isinstance(value, (str, bool, list)) and not var.startswith("_") and "password" not in var
         with self.printer.foldable_output("local_vars"):
             self.printer.print_dict({var: value
                                      for var, value in self.__dict__.items()
