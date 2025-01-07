@@ -1,5 +1,6 @@
 import os
 import platform
+import pytest
 import unittest
 import sys
 
@@ -949,7 +950,7 @@ class AppTest(unittest.TestCase):
         self.assertIn("pip", self.runner.calls[1])
 
 
-    @unittest.skipIf(sys.platform.startswith("win"), "Requires Linux")
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Requires Linux")
     def test_pip_docker_sudo(self):
         self.packager = ConanMultiPackager(username="lasote",
                                             channel="mychannel",
@@ -1043,7 +1044,7 @@ class AppTest(unittest.TestCase):
                 self.assertTrue("CONAN_PIP_COMMAND: '/bin/bash' is not a valid pip command" in context.exception)
             self.assertNotIn("[pip_update]", output)
 
-    @unittest.skipIf(CONAN_V2, "We don't have control over the export in V2")
+    @pytest.mark.skipif(CONAN_V2, reason= "We don't have control over the export in V2")
     def test_skip_recipe_export(self):
 
         def _check_create_calls(skip_recipe_export):

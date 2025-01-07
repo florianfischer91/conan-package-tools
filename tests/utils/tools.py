@@ -16,7 +16,7 @@ if CONAN_V2:
             inputs = list(list(users.values())[0][0]) if users else users
             super().__init__(cache_folder, current_folder, servers, inputs, requester_class, path_with_spaces, default_server_user, light, custom_commands_folder)
 else:
-    from cpt.test.utils.tools_v1 import TestClient, TestServer, TestBufferConanOutput
+    from tests.utils.tools_v1 import TestClient, TestServer, TestBufferConanOutput
 
     def pos_args(args_str: str):
         return args_str

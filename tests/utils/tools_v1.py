@@ -35,15 +35,15 @@ from conans.model.profile import Profile
 from conans.model.ref import ConanFileReference, PackageReference
 from conans.model.settings import Settings
 from conans.server.revision_list import _RevisionEntry
-from cpt.test.assets import copy_assets
-from cpt.test.assets.genconanfile import GenConanfile
-from cpt.test.utils.mocks import MockedUserIO, TestBufferConanOutput
-from cpt.test.utils.scm import create_local_git_repo, create_local_svn_checkout, \
+from tests.assets import copy_assets
+from tests.assets.genconanfile import GenConanfile
+from tests.utils.mocks import MockedUserIO, TestBufferConanOutput
+from tests.utils.scm import create_local_git_repo, create_local_svn_checkout, \
     create_remote_svn_repo
-from cpt.test.utils.server_launcher import (TESTING_REMOTE_PRIVATE_PASS,
+from tests.utils.server_launcher import (TESTING_REMOTE_PRIVATE_PASS,
                                                TESTING_REMOTE_PRIVATE_USER,
                                                TestServerLauncher)
-from cpt.test.utils.test_files import temp_folder
+from tests.utils.test_files import temp_folder
 from conans.util.conan_v2_mode import CONAN_V2_MODE_ENVVAR
 from conans.util.env_reader import get_env
 from conans.util.files import mkdir, save_files
@@ -700,7 +700,7 @@ class TestClient(object):
         """
         # TODO: remove in 2.0
         if os.getenv("CONAN_V2_CLI"):
-            from cpt.test.utils.mocks import RedirectedTestOutput
+            from tests.utils.mocks import RedirectedTestOutput
             self.out = RedirectedTestOutput()
             with redirect_output(self.out):
                 error = self.run_cli(command_line, user_io=user_io, assert_error=assert_error)
